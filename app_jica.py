@@ -11,23 +11,10 @@ st.set_page_config(
     layout="wide",
     page_icon="⚒️"
 )
-import io
-from pathlib import Path
-import streamlit as st
-import streamlit.components.v1 as components
-import numpy as np
-import pandas as pd
-import plotly.graph_objects as go
-
-st.set_page_config(
-    page_title="Gemelo Digital - Planta Piloto JICA (UNMSM)",
-    layout="wide",
-    page_icon="⚒️"
-)
 
 # 👇 AQUÍ COLOCAS EL PASO 2 (LÍNEA 14) 👇
 clave = st.sidebar.text_input("🔒 Clave de Acceso JICA", type="password")
-if clave != st.secrets.get("CLAVE_JICA", "UNMSM2026"):
+if clave != "UNMSM2026":
     st.warning("Ingresa la clave de acceso en la barra lateral para usar el Gemelo Digital.")
     st.stop()
 # 👆 FIN DEL PASO 2 👆
@@ -530,7 +517,7 @@ with tab_et1:
             height=420,
             legend=dict(orientation="h", y=1.14)
         )
-        st.plotly_chart(fig_g, use_container_width=True)
+        st.plotly_chart(fig_g, width="stretch")
 
     with c_der:
         st.subheader("💧 Balance de Agua y Energía en Molienda")
@@ -542,7 +529,7 @@ with tab_et1:
         )
         mallas = [("Malla 65", 210), ("Malla 100", 149), ("Malla 140", 105), ("Malla 200", 74), ("Malla 270", 53), ("Malla 400", 37)]
         df_m = pd.DataFrame([{"Malla": m, "µm": u, "% Pasante Rebose [10]": round(100*(1-np.exp(-((u/d63_reb)**n_rr))), 1)} for m, u in mallas])
-        st.dataframe(df_m, use_container_width=True, hide_index=True)
+        st.dataframe(df_m, width="stretch", hide_index=True)
 
 with tab_et23:
     st.subheader(f"⚖️ Balance Metalúrgico Global de 3 Productos ({m1_sym} - {m2_sym})")
@@ -560,7 +547,7 @@ with tab_et23:
         f"Ley {m2_sym} (%)": [ley_f_m2, (fino_m2_c1/s17_conc_c1_kgh)*100, ley_c2_m2, ley_rel_m2],
         f"Dist. {m2_sym} (%)": [100.0, (fino_m2_c1/fino_m2_alim)*100, rec_global_c2, (fino_m2_rel/fino_m2_alim)*100],
     })
-    st.dataframe(df_3prod.round(2), use_container_width=True, hide_index=True)
+    st.dataframe(df_3prod.round(2), width="stretch", hide_index=True)
 
     c_reac1, c_reac2 = st.columns(2)
     t_h = F_kgh / 1000.0
@@ -613,7 +600,7 @@ with tab_34:
     ]
     df_34 = pd.DataFrame(corrientes_data, columns=["N° Corriente", "Descripción en Plano JICA", "Sólidos (kg/h)", "% Sólidos", "Agua (L/h)"])
     df_34["Pulpa Total (L/h)"] = (df_34["Sólidos (kg/h)"] / sg_mineral) + df_34["Agua (L/h)"]
-    st.dataframe(df_34.round(2), use_container_width=True, hide_index=True)
+    st.dataframe(df_34.round(2), width="stretch", hide_index=True)
 
     # Generar Excel en memoria RAM para descarga desde cualquier navegador web o celular
     buffer_excel = io.BytesIO()
@@ -638,3 +625,4 @@ with tab_34:
                 with open(archivo_full, "wb") as f:
                     f.write(buffer_excel.getvalue())
                 st.success(f"Guardado en Google Drive: {archivo_full}")
+
