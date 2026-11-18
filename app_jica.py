@@ -11,7 +11,33 @@ st.set_page_config(
     layout="wide",
     page_icon="⚒️"
 )
+import io
+from pathlib import Path
+import streamlit as st
+import streamlit.components.v1 as components
+import numpy as np
+import pandas as pd
+import plotly.graph_objects as go
 
+st.set_page_config(
+    page_title="Gemelo Digital - Planta Piloto JICA (UNMSM)",
+    layout="wide",
+    page_icon="⚒️"
+)
+
+# 👇 AQUÍ COLOCAS EL PASO 2 (LÍNEA 14) 👇
+clave = st.sidebar.text_input("🔒 Clave de Acceso JICA", type="password")
+if clave != st.secrets.get("CLAVE_JICA", "UNMSM2026"):
+    st.warning("Ingresa la clave de acceso en la barra lateral para usar el Gemelo Digital.")
+    st.stop()
+# 👆 FIN DEL PASO 2 👆
+
+st.markdown("""
+<style>
+.block-container { padding-top: 1.1rem; padding-bottom: 1rem; }
+div[data-testid="stMetricValue"] { font-size: 1.32rem; }
+</style>
+""", unsafe_allow_html=True)
 st.markdown("""
 <style>
 .block-container { padding-top: 1.1rem; padding-bottom: 1rem; }
