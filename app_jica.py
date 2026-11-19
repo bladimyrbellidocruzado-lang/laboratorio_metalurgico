@@ -1,4 +1,4 @@
-﻿import io
+import io
 from datetime import datetime
 from pathlib import Path
 import streamlit as st
@@ -704,8 +704,8 @@ with tab_pfd:
 
       <!-- AGUA SALIDA [8] con holgura respecto a corriente 7 y 12 -->
       <circle cx="352" cy="458" r="5.5" fill="none" stroke="{line_main}" stroke-width="2"/>
-      <text x="315" y="432" fill="{line_main}" font-size="9.5" font-weight="bold" class="lbl">AGUA SALIDA [8]</text>
-      <text x="322" y="444" fill="{line_main}" font-size="9" class="lbl">({res['w8_agua_sal']:.0f} L/h)</text>
+      <text x="326" y="432" fill="{line_main}" font-size="9.5" font-weight="bold" class="lbl">AGUA SALIDA [8]</text>
+      <text x="332" y="444" fill="{line_main}" font-size="9" class="lbl">({res['w8_agua_sal']:.0f} L/h)</text>
       <line x1="348" y1="464" x2="316" y2="510" stroke="{line_main}" stroke-width="1.8" marker-end="url(#arr)"/>
 
       <polygon points="205,438 320,515 320,545 290,545 205,472" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
@@ -913,33 +913,463 @@ with tab_pfd:
       <text x="30" y="731" fill="{fg_txt}" font-size="8.5" class="lbl">Modelo de Simulación en Estado Estacionario</text>
     </svg>"""
 
-    svg_wrapper = f"""
-    <style>
-      .jica-svg-box {{
-        background:{bg_svg};
-        border:1px solid #CBD5E1;
-        border-radius:6px;
-        padding:6px;
-        {overflow_css}
-        scrollbar-width: thin;
-        scrollbar-color: #94A3B8 transparent;
-      }}
-      .jica-svg-box::-webkit-scrollbar {{
-        width: 6px;
-        height: 6px;
-      }}
-      .jica-svg-box::-webkit-scrollbar-track {{
-        background: transparent;
-      }}
-      .jica-svg-box::-webkit-scrollbar-thumb {{
-        background-color: #94A3B8;
-        border-radius: 999px;
-      }}
-    </style>
-    <div class="jica-svg-box">{svg_only}</div>
+    svg_only = f"""<svg id="jica-svg-plan" viewBox="0 0 1250 780" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block; font-family: Inter, Arial, sans-serif; background:{bg_svg};">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="{line_main}"/>
+        </marker>
+        <marker id="arr-rec" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="{line_rec}"/>
+        </marker>
+        <marker id="arr-conc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1 L 10 5 L 0 9 z" fill="{line_conc}"/>
+        </marker>
+        <style>
+          .lbl {{ paint-order: stroke; stroke: {halo_color}; stroke-width: 3.2px; stroke-linecap: round; stroke-linejoin: round; }}
+        </style>
+      </defs>
+
+      <!-- CONMINUCIÓN Y CLASIFICACIÓN (EQUIPOS 1 AL 8) -->
+      <circle cx="85" cy="25" r="7" fill="none" stroke="{line_main}" stroke-width="2"/>
+      <text x="100" y="29" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ALIMENTO ({F_kgh:.0f} kg/h)</text>
+      <line x1="85" y1="32" x2="85" y2="62" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="70" y="50" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">1</text>
+
+      <polygon points="65,65 80,65 80,115 70,115" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <polygon points="108,65 95,65 86,115 96,115" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <circle cx="106" cy="100" r="8" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <text x="70" y="92" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">1</text>
+      <text x="122" y="82" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">CHANCADORA DE MANDÍBULAS</text>
+      <text x="122" y="96" fill="{fg_txt}" font-size="10" class="lbl">Set: {set_mandibulas_mm:.0f} mm | P80 calc: {res['p80_mand_mm']:.1f} mm</text>
+
+      <line x1="85" y1="117" x2="85" y2="152" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="70" y="138" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">2</text>
+
+      <polygon points="73,152 97,152 91,168 79,168" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
+      <circle cx="71" cy="180" r="14" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <circle cx="99" cy="180" r="14" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <text x="81" y="164" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">2</text>
+      <text x="122" y="176" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">CHANCADORA DE RODILLOS</text>
+      <text x="122" y="190" fill="{fg_txt}" font-size="10" class="lbl">Luz: {set_rodillos_mm:.1f} mm | P80 calc: {res['p80_rod_mm']:.1f} mm</text>
+
+      <line x1="85" y1="196" x2="85" y2="232" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="70" y="217" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">3</text>
+
+      <polygon points="65,235 105,235 105,275 89,302 81,302 65,275" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <text x="81" y="268" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">3</text>
+      <text x="115" y="262" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">TOLVA DE FINOS</text>
+      <text x="115" y="276" fill="{fg_txt}" font-size="10" class="lbl">{F_kgh:.0f} kg/h | F80: {res['f80_mol_um']:.0f} µm</text>
+
+      <line x1="85" y1="302" x2="85" y2="348" stroke="{line_main}" stroke-width="2"/>
+      <line x1="85" y1="348" x2="118" y2="348" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="68" y="330" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">4</text>
+      <circle cx="126" cy="348" r="8" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <text x="122" y="334" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">4</text>
+
+      <circle cx="168" cy="292" r="5.5" fill="none" stroke="{line_main}" stroke-width="2"/>
+      <text x="179" y="295" fill="{line_main}" font-size="10" font-weight="bold" class="lbl">AGUA ENTRADA [6] ({res['w6_agua_ent']:.0f} L/h)</text>
+      <line x1="163" y1="297" x2="133" y2="339" stroke="{line_main}" stroke-width="1.8" marker-end="url(#arr)"/>
+
+      <line x1="134" y1="348" x2="178" y2="348" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="148" y="341" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">5</text>
+
+      <polygon points="180,338 192,326 192,370 180,358" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <rect x="192" y="316" width="68" height="64" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <rect x="260" y="310" width="8" height="76" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <rect x="268" y="336" width="12" height="24" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <text x="222" y="352" fill="{fg_txt}" font-size="13" font-weight="bold" class="lbl">5</text>
+      <text x="150" y="398" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">MOLINO DE BOLAS 2'x2'</text>
+      <text x="150" y="412" fill="{fg_txt}" font-size="10" class="lbl">Carga: {res['s5_alim_mol']:.0f} kg/h ({sol_molino:.0f}% Sól)</text>
+
+      <polyline points="280,348 293,348 293,505" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="278" y="425" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">7</text>
+
+      <circle cx="352" cy="458" r="5.5" fill="none" stroke="{line_main}" stroke-width="2"/>
+      <text x="326" y="432" fill="{line_main}" font-size="9.5" font-weight="bold" class="lbl">AGUA SALIDA [8]</text>
+      <text x="332" y="444" fill="{line_main}" font-size="9" class="lbl">({res['w8_agua_sal']:.0f} L/h)</text>
+      <line x1="348" y1="464" x2="316" y2="510" stroke="{line_main}" stroke-width="1.8" marker-end="url(#arr)"/>
+
+      <polygon points="205,438 320,515 320,545 290,545 205,472" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <line x1="212" y1="455" x2="305" y2="528" stroke="{eq_stroke}" stroke-width="2" stroke-dasharray="6,4"/>
+      <text x="262" y="505" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">6</text>
+      <text x="148" y="534" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">CLASIFICADOR HELICOIDAL</text>
+      <text x="148" y="548" fill="{fg_txt}" font-size="10" class="lbl">CC: {cc_espiral_pct:.0f}% | P80 rebose: {res['p80_reb_calc']:.0f} µm</text>
+
+      <g opacity="{op_rec}">
+        <polyline points="205,455 126,455 126,358" fill="none" stroke="{line_rec}" stroke-width="2.2" stroke-dasharray="5,3" marker-end="url(#arr-rec)"/>
+        <text x="108" y="415" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">9 ({res['s9_arenas']:.0f})</text>
+      </g>
+
+      <polyline points="320,532 345,532 345,575" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="350" y="555" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">10</text>
+      <polygon points="327,578 363,578 363,615 345,638 327,615" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <text x="341" y="608" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">7</text>
+      <text x="255" y="612" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">SUMIDERO 1</text>
+
+      <line x1="345" y1="638" x2="345" y2="675" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="350" y="660" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">11</text>
+      <circle cx="345" cy="690" r="13" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <polygon points="333,704 357,704 352,698 338,698" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
+      <text x="341" y="694" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">8</text>
+      <text x="282" y="695" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BOMBA 1</text>
+
+      <polyline points="358,690 388,690 388,35 452,35 452,58" fill="none" stroke="{line_main}" stroke-width="2.2" marker-end="url(#arr)"/>
+      <text x="394" y="295" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">12 ({res['s10_rebose']:.0f} kg/h)</text>
+      <text x="394" y="310" fill="{line_main}" font-size="10" class="lbl">P80: {res['p80_reb_calc']:.0f} µm</text>
+
+      <!-- CIRCUITO 1 (C1) -->
+      <g opacity="{op_c1}">
+        <polygon points="440,62 480,62 480,102 460,124 440,102" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <text x="456" y="92" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">9</text>
+        <text x="488" y="85" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACOND. 1 (pH {ph_c1:.1f})</text>
+
+        <polyline points="460,124 460,140 520,140 520,158" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="482" y="135" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">13</text>
+        <polygon points="500,162 540,162 540,202 520,224 500,202" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <text x="513" y="192" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">10</text>
+        <text x="435" y="192" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACOND. 2</text>
+
+        <polyline points="520,224 520,242 585,242" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="498" y="257" fill="{line_main}" font-size="10" font-weight="bold" class="lbl">14 ({res['s14_alim_ro1']:.0f} kg/h)</text>
+
+        <rect x="588" y="210" width="200" height="52" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <line x1="638" y1="210" x2="638" y2="262" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="688" y1="210" x2="688" y2="262" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="738" y1="210" x2="738" y2="262" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <polyline points="588,225 765,232 788,215" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
+        <text x="605" y="245" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">11</text>
+        <text x="625" y="202" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BANC. CEL. RO. C1 (4 Celdas)</text>
+
+        <polyline points="755,210 755,152 875,152" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="780" y="145" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">15 ({res['s15_esp_ro1']:.1f} kg/h)</text>
+        <rect x="878" y="135" width="96" height="48" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <line x1="926" y1="135" x2="926" y2="183" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <polyline points="878,148 955,154 974,140" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
+        <text x="892" y="168" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">12</text>
+        <text x="878" y="200" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BAN. CEL. CL. 1</text>
+
+        <polyline points="945,135 945,82 775,82" fill="none" stroke="{line_conc}" stroke-width="2.5" marker-end="url(#arr-conc)"/>
+        <circle cx="765" cy="82" r="7" fill="none" stroke="{line_conc}" stroke-width="2"/>
+        <text x="845" y="75" fill="{line_conc}" font-size="11" font-weight="bold" class="lbl">17</text>
+        <text x="665" y="104" fill="{line_conc}" font-size="12" font-weight="bold" class="lbl">CONC. FINAL C1 ({res['s17_c1']:.2f} kg/h | Ley {m1_sym}: {res['ley_c1_m1']:.1f}% | Rec: {res['rec_glob_c1']:.1f}%)</text>
+
+        <polyline points="788,242 998,242 998,338 935,338" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="860" y="236" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">16 ({res['s16_cola_ro1']:.1f} kg/h)</text>
+        <rect x="680" y="308" width="250" height="52" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <line x1="730" y1="308" x2="730" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="780" y1="308" x2="780" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="830" y1="308" x2="830" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="880" y1="308" x2="880" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <polyline points="930,322 705,328 680,312" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
+        <text x="905" y="344" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">13</text>
+        <text x="695" y="298" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BANCO DE CELDAS SCV. CIRCUITO 1 (5 Celdas)</text>
+
+        <polyline points="974,162 1062,162 1062,395" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
+        <text x="1068" y="280" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">18</text>
+        <polyline points="710,360 710,382 1042,382 1042,395" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
+        <text x="850" y="377" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">19</text>
+
+        <polygon points="1032,398 1072,398 1072,435 1052,456 1032,435" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <text x="1044" y="428" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">14</text>
+        <text x="948" y="428" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">SUMIDERO 2</text>
+
+        <polyline points="1052,456 1052,482 1085,482" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
+        <text x="1035" y="474" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">20</text>
+        <circle cx="1102" cy="482" r="13" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <polygon points="1090,496 1114,496 1109,490 1095,490" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
+        <text x="1095" y="486" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">15</text>
+        <text x="1080" y="462" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BOM. 2</text>
+
+        <g opacity="{op_rec}">
+          <polyline points="1115,482 1175,482 1175,18 468,18 468,58" fill="none" stroke="{line_rec}" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-rec)"/>
+          <text x="795" y="14" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">21 (Medios C1: {res['s21_medios_c1']:.1f} kg/h)</text>
+        </g>
+      </g>
+
+      <!-- TRANSFERENCIA C1 -> C2 Y CIRCUITO 2 (C2) -->
+      <polyline points="680,342 622,342 622,368" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="642" y="336" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">22</text>
+      <polygon points="602,372 642,372 642,408 622,428 602,408" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <text x="614" y="402" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">16</text>
+      <text x="518" y="398" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">SUMIDERO 3</text>
+
+      <polyline points="622,428 622,452 572,452" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="595" y="446" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">23</text>
+      <circle cx="555" cy="452" r="13" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+      <polygon points="543,466 567,466 562,460 548,460" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
+      <text x="547" y="456" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">17</text>
+      <text x="528" y="482" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BOMBA 3</text>
+
+      <polyline points="542,452 452,452 452,508" fill="none" stroke="{line_main}" stroke-width="2.2" marker-end="url(#arr)"/>
+      <text x="455" y="445" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">24 ({res['s22_cola_scv1']:.1f} kg/h)</text>
+
+      <g opacity="{op_c2}">
+        <polygon points="440,512 480,512 480,550 460,570 440,550" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <text x="452" y="542" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">18</text>
+        <text x="486" y="538" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACON. 3 (pH {ph_c2:.1f})</text>
+
+        <polyline points="460,570 460,582 520,582 520,596" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="485" y="578" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">25</text>
+        <polygon points="500,600 540,600 540,636 520,656 500,636" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <text x="512" y="628" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">19</text>
+        <text x="442" y="628" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACON. 4</text>
+
+        <polyline points="520,656 520,668 585,668" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="542" y="663" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">26</text>
+        <rect x="588" y="635" width="200" height="48" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <line x1="638" y1="635" x2="638" y2="683" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="688" y1="635" x2="688" y2="683" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="738" y1="635" x2="738" y2="683" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <polyline points="588,648 765,655 788,640" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
+        <text x="605" y="666" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">20</text>
+        <text x="625" y="627" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BANC. CEL. RO. C2 (4 Celdas)</text>
+
+        <polyline points="755,635 755,585 875,585" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="780" y="578" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">27 ({res['s27_esp_ro2']:.1f} kg/h)</text>
+        <rect x="878" y="568" width="96" height="46" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <line x1="926" y1="568" x2="926" y2="614" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <polyline points="878,580 955,586 974,572" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
+        <text x="892" y="598" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">21</text>
+        <text x="878" y="630" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BAN. CEL. CL. 2</text>
+
+        <polyline points="945,568 945,525 775,525" fill="none" stroke="{line_conc}" stroke-width="2.5" marker-end="url(#arr-conc)"/>
+        <circle cx="765" cy="525" r="7" fill="none" stroke="{line_conc}" stroke-width="2"/>
+        <text x="845" y="518" fill="{line_conc}" font-size="11" font-weight="bold" class="lbl">29</text>
+        <text x="665" y="546" fill="{line_conc}" font-size="12" font-weight="bold" class="lbl">CONC. FINAL C2 ({res['s29_c2']:.2f} kg/h | Ley {m2_sym}: {res['ley_c2_m2']:.1f}% | Rec: {res['rec_glob_c2']:.1f}%)</text>
+
+        <polyline points="788,662 998,662 998,718 935,718" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
+        <text x="885" y="656" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">28</text>
+        <rect x="680" y="696" width="250" height="46" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <line x1="730" y1="696" x2="730" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="780" y1="696" x2="780" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="830" y1="696" x2="830" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <line x1="880" y1="696" x2="880" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
+        <polyline points="930,708 705,714 680,700" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
+        <text x="905" y="726" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">22</text>
+        <text x="710" y="691" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">BANCO DE CELDAS SCV. C2 (5 Celdas)</text>
+
+        <polyline points="974,592 1062,592 1062,672" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
+        <text x="1068" y="635" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">30</text>
+        <polyline points="710,742 710,752 1042,752 1042,672" fill="none" stroke="{line_rec}" stroke-width="1.8"/>
+        <text x="850" y="749" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">31</text>
+
+        <polygon points="1032,675 1072,675 1072,705 1052,722 1032,705" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <text x="1044" y="698" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">23</text>
+        <text x="952" y="698" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">SUMIDERO 4</text>
+
+        <polyline points="1052,722 1052,735 1100,735" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
+        <text x="1072" y="730" fill="{line_rec}" font-size="10" font-weight="bold" class="lbl">32</text>
+        <circle cx="1116" cy="735" r="12" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
+        <text x="1109" y="739" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">24</text>
+        <text x="1095" y="718" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">BOM. 4</text>
+
+        <g opacity="{op_rec}">
+          <polyline points="1128,735 1155,735 1155,498 468,498 468,508" fill="none" stroke="{line_rec}" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-rec)"/>
+          <text x="795" y="493" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">33 (Medios C2: {res['s33_medios_c2']:.1f} kg/h)</text>
+        </g>
+      </g>
+
+      <g opacity="{op_rel}">
+        <polyline points="680,718 425,718" fill="none" stroke="{line_rec}" stroke-width="2.5" marker-end="url(#arr-rec)"/>
+        <circle cx="415" cy="718" r="7" fill="none" stroke="{line_rec}" stroke-width="2"/>
+        <text x="435" y="708" fill="{line_rec}" font-size="11.5" font-weight="bold" class="lbl">34 — RELAVE FINAL ({res['s34_relave']:.1f} kg/h)</text>
+        <text x="435" y="734" fill="{line_rec}" font-size="10.5" font-weight="bold" class="lbl">Leyes: {res['ley_rel_m1']:.2f}% {m1_sym} | {res['ley_rel_m2']:.2f}% {m2_sym} | Fe: {ley_f_fe:.1f}%</text>
+      </g>
+
+      <!-- Leyenda Técnica de Corrientes -->
+      <rect x="20" y="595" width="245" height="72" rx="4" fill="{legend_bg}" stroke="{legend_stroke}" stroke-width="1.2"/>
+      <text x="30" y="612" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">LEYENDA DE CORRIENTES</text>
+      <line x1="30" y1="625" x2="54" y2="625" stroke="{line_main}" stroke-width="2.2"/>
+      <text x="60" y="629" fill="{fg_txt}" font-size="9.5" class="lbl">Pulpa / Alimentación / Agua</text>
+      <line x1="30" y1="640" x2="54" y2="640" stroke="{line_conc}" stroke-width="2.4"/>
+      <text x="60" y="644" fill="{fg_txt}" font-size="9.5" class="lbl">Concentrado Final (C1 / C2)</text>
+      <line x1="30" y1="655" x2="54" y2="655" stroke="{line_rec}" stroke-width="2.2" stroke-dasharray="5,3"/>
+      <text x="60" y="659" fill="{fg_txt}" font-size="9.5" class="lbl">Relave Final / Recirculación</text>
+
+      <!-- Cajetín Técnico UNMSM -->
+      <rect x="20" y="675" width="245" height="82" rx="4" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.4"/>
+      <text x="30" y="693" fill="{fg_txt}" font-size="10.5" font-weight="bold" class="lbl">PLANTA PILOTO JICA — UNMSM</text>
+      <text x="30" y="709" fill="{fg_txt}" font-size="9.5" class="lbl">Ing. Metalúrgica | 24 Equipos / 34 Corr.</text>
+      <text x="30" y="725" fill="{fg_txt}" font-size="9.5" class="lbl">Esquema Activo: {m1_sym} / {m2_sym} | Fe: {ley_f_fe:.1f}%</text>
+      <text x="30" y="741" fill="{fg_txt}" font-size="8.5" class="lbl">Modelo de Simulación en Estado Estacionario</text>
+    </svg>"""
+
+    sheet_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; }}
+        body {{ background: transparent; }}
+        #jica-sheet-host {{
+          background: #E2E8F0;
+          border: 1px solid #CBD5E1;
+          border-radius: 6px;
+          padding: 10px;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }}
+        #jica-sheet-host:fullscreen {{
+          background: #0F172A;
+          padding: 16px;
+          border-radius: 0;
+        }}
+        .sheet-bar {{
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 8px;
+          background: #FFFFFF;
+          border: 1px solid #CBD5E1;
+          border-radius: 5px;
+          padding: 6px 10px;
+        }}
+        .sheet-title {{
+          font-size: 12px;
+          font-weight: 600;
+          color: #0F172A;
+        }}
+        .sheet-actions {{
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }}
+        .btn-tool {{
+          background: #F8FAFC;
+          color: #0F172A;
+          border: 1px solid #CBD5E1;
+          border-radius: 4px;
+          padding: 4px 10px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+        }}
+        .btn-tool:hover {{
+          background: #EFF6FF;
+          border-color: #1E3A8A;
+          color: #1E3A8A;
+        }}
+        .btn-primary {{
+          background: #1E3A8A;
+          color: #FFFFFF;
+          border-color: #1E3A8A;
+        }}
+        .btn-primary:hover {{
+          background: #172554;
+          color: #FFFFFF;
+        }}
+        .zoom-readout {{
+          min-width: 48px;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 700;
+          color: #1E3A8A;
+        }}
+        #jica-viewport {{
+          position: relative;
+          width: 100%;
+          height: 620px;
+          overflow: auto;
+          background: {bg_svg};
+          border: 1px solid #94A3B8;
+          border-radius: 4px;
+          box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+          scrollbar-width: thin;
+          scrollbar-color: #94A3B8 transparent;
+        }}
+        #jica-sheet-host:fullscreen #jica-viewport {{
+          height: calc(100vh - 64px);
+        }}
+        #jica-paper {{
+          width: 100%;
+          height: 100%;
+          transform-origin: top left;
+          transition: transform 0.12s ease-out;
+          cursor: grab;
+        }}
+        #jica-paper:active {{
+          cursor: grabbing;
+        }}
+      </style>
+    </head>
+    <body>
+      <div id="jica-sheet-host">
+        <div class="sheet-bar">
+          <div class="sheet-title">Hoja CAD — Planta Piloto JICA (UNMSM) | Arrastra para mover al hacer zoom</div>
+          <div class="sheet-actions">
+            <button type="button" class="btn-tool" id="btn-zoom-out">-</button>
+            <span class="zoom-readout" id="zoom-label">{zoom_pct}%</span>
+            <button type="button" class="btn-tool" id="btn-zoom-in">+</button>
+            <button type="button" class="btn-tool" id="btn-zoom-reset">Ajustar</button>
+            <button type="button" class="btn-tool btn-primary" id="btn-fullscreen">Pantalla completa</button>
+          </div>
+        </div>
+        <div id="jica-viewport">
+          <div id="jica-paper">{svg_only}</div>
+        </div>
+      </div>
+      <script>
+        (function() {{
+          let scale = {zoom_pct} / 100.0;
+          const minScale = 0.7;
+          const maxScale = 2.2;
+          const host = document.getElementById("jica-sheet-host");
+          const viewport = document.getElementById("jica-viewport");
+          const paper = document.getElementById("jica-paper");
+          const label = document.getElementById("zoom-label");
+
+          function applyZoom(newScale) {{
+            scale = Math.min(maxScale, Math.max(minScale, Number(newScale.toFixed(2))));
+            paper.style.transform = "scale(" + scale + ")";
+            paper.style.width = (scale > 1 ? (scale * 100) + "%" : "100%");
+            paper.style.height = (scale > 1 ? (scale * 100) + "%" : "100%");
+            label.textContent = Math.round(scale * 100) + "%";
+          }}
+
+          document.getElementById("btn-zoom-in").addEventListener("click", () => applyZoom(scale + 0.15));
+          document.getElementById("btn-zoom-out").addEventListener("click", () => applyZoom(scale - 0.15));
+          document.getElementById("btn-zoom-reset").addEventListener("click", () => {{
+            applyZoom(1.0);
+            viewport.scrollTop = 0;
+            viewport.scrollLeft = 0;
+          }});
+
+          document.getElementById("btn-fullscreen").addEventListener("click", () => {{
+            if (!document.fullscreenElement) {{
+              host.requestFullscreen().catch(() => {{}});
+            }} else {{
+              document.exitFullscreen().catch(() => {{}});
+            }}
+          }});
+
+          // Arrastrar con el mouse (pan)
+          let isDragging = false, startX = 0, startY = 0, scrollLeft = 0, scrollTop = 0;
+          viewport.addEventListener("mousedown", (e) => {{
+            isDragging = true;
+            startX = e.pageX - viewport.offsetLeft;
+            startY = e.pageY - viewport.offsetTop;
+            scrollLeft = viewport.scrollLeft;
+            scrollTop = viewport.scrollTop;
+          }});
+          window.addEventListener("mouseup", () => {{ isDragging = false; }});
+          viewport.addEventListener("mousemove", (e) => {{
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX - viewport.offsetLeft;
+            const y = e.pageY - viewport.offsetTop;
+            viewport.scrollLeft = scrollLeft - (x - startX);
+            viewport.scrollTop = scrollTop - (y - startY);
+          }});
+
+          applyZoom(scale);
+        }})();
+      </script>
+    </body>
+    </html>
     """
-    comp_height = 580 if zoom_pct == 100 else 685
-    components.html(svg_wrapper, height=comp_height, scrolling=False)
+    components.html(sheet_html, height=690, scrolling=False)
 
     st.download_button(
         label="Descargar Plano Flowsheet (.SVG)",
