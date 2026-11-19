@@ -1469,8 +1469,118 @@ with tab_34:
 
     buffer_excel = io.BytesIO()
     with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
-        df_3prod.round(2).to_excel(writer, sheet_name="Balance_Global_C1_C2", index=False)
-        df_34.round(2).to_excel(writer, sheet_name="34_Corrientes_JICA", index=False)
+        workbook = writer.book
+
+        # Estilos corporativos sobrios
+        fmt_title = workbook.add_format({
+            "bold": True, "font_size": 13, "font_color": "#0F172A"
+        })
+        fmt_subtitle = workbook.add_format({
+            "font_size": 10, "font_color": "#475569"
+        })
+        fmt_header = workbook.add_format({
+            "bold": True, "font_color": "#FFFFFF", "bg_color": "#1E3A8A",
+            "border": 1, "align": "center", "valign": "vcenter", "text_wrap": True
+        })
+        fmt_num = workbook.add_format({
+            "num_format": "#,##0.00", "border": 1, "align": "right"
+        })
+        fmt_text = workbook.add_format({
+            "border": 1, "align": "left"
+        })
+        fmt_meta_lbl = workbook.add_format({
+            "bold": True, "bg_color": "#F1F5F9", "border": 1, "font_color": "#0F172A"
+        })
+        fmt_meta_val = workbook.add_format({
+            "bg_color": "#FFFFFF", "border": 1, "num_format": "#,##0.00"
+        })
+
+        # --- HOJA 1: RESUMEN EJECUTIVO Y GRÁFICOS NATIVOS ---
+        ws_res = workbook.add_worksheet("Resumen_y_Graficos")
+        ws_res.write("A1", "GEMELO DIGITAL — PLANTA PILOTO JICA (UNMSM)", fmt_title)
+        ws_res.write("A2", f"Esquema: {esquema_mineral} | 24 Equipos / 34 Corrientes", fmt_subtitle)
+
+        resumen_filas = [
+            ("Alimento Fresco (kg/h)", F_kgh),
+            ("P80 Rebose Clasificador (µm)", res["p80_reb_calc"]),
+            (f"Recuperación Global {m1_sym} C1 (%)", res["rec_glob_c1"]),
+            (f"Ley {m1_sym} en Conc. C1 (%)", res["ley_c1_m1"]),
+            (f"Recuperación Global {m2_sym} C2 (%)", res["rec_glob_c2"]),
+            (f"Ley {m2_sym} en Conc. C2 (%)", res["ley_c2_m2"]),
+            ("Relave Final [Corr. 34] (kg/h)", res["s34_relave"]),
+        ]
+        ws_res.write("A4", "Indicador Clave", fmt_header)
+        ws_res.write("B4", "Valor Actual", fmt_header)
+        for idx, (lbl_k, val_k) in enumerate(resumen_filas, start=5):
+            ws_res.write(f"A{idx}", lbl_k, fmt_meta_lbl)
+            ws_res.write(f"B{idx}", float(val_k), fmt_meta_val)
+        ws_res.set_column("A:A", 34)
+        ws_res.set_column("B:B", 18)
+
+        # --- HOJA 2: BALANCE GLOBAL C1 / C2 ---
+        df_3prod_r = df_3prod.round(2)
+        df_3prod_r.to_excel(writer, sheet_name="Balance_Global_C1_C2", index=False)
+        ws_bal = writer.sheets["Balance_Global_C1_C2"]
+        for c_idx, col_name in enumerate(df_3prod_r.columns):
+            ws_bal.write(0, c_idx, col_name, fmt_header)
+            ws_bal.set_column(c_idx, c_idx, 22)
+            for r_idx in range(1, len(df_3prod_r) + 1):
+                val = df_3prod_r.iloc[r_idx - 1, c_idx]
+                ws_bal.write(r_idx, c_idx, val, fmt_text if c_idx == 0 else fmt_num)
+
+        # Gráfico nativo de Distribución de m1_sym (%) en Balance_Global_C1_C2
+        chart_dist1 = workbook.add_chart({"type": "column"})
+        chart_dist1.add_series({
+            "name": f"Distribución {m1_sym} (%)",
+            "categories": ["Balance_Global_C1_C2", 1, 0, len(df_3prod_r), 0],
+            "values": ["Balance_Global_C1_C2", 1, 4, len(df_3prod_r), 4],
+            "fill": {"color": "#1E3A8A"},
+            "data_labels": {"value": True}
+        })
+        chart_dist1.set_title({"name": f"Distribución de {m1_sym} por Producto (%)"})
+        chart_dist1.set_x_axis({"name": "Producto / Corriente"})
+        chart_dist1.set_y_axis({"name": "Distribución (%)", "max": 110})
+        chart_dist1.set_legend({"none": True})
+        ws_bal.insert_chart("A7", chart_dist1, {"x_scale": 1.3, "y_scale": 1.15})
+
+        # Gráfico nativo de Distribución de m2_sym (%) en Balance_Global_C1_C2
+        chart_dist2 = workbook.add_chart({"type": "column"})
+        chart_dist2.add_series({
+            "name": f"Distribución {m2_sym} (%)",
+            "categories": ["Balance_Global_C1_C2", 1, 0, len(df_3prod_r), 0],
+            "values": ["Balance_Global_C1_C2", 1, 6, len(df_3prod_r), 6],
+            "fill": {"color": "#0F766E"},
+            "data_labels": {"value": True}
+        })
+        chart_dist2.set_title({"name": f"Distribución de {m2_sym} por Producto (%)"})
+        chart_dist2.set_x_axis({"name": "Producto / Corriente"})
+        chart_dist2.set_y_axis({"name": "Distribución (%)", "max": 110})
+        chart_dist2.set_legend({"none": True})
+        ws_bal.insert_chart("E7", chart_dist2, {"x_scale": 1.3, "y_scale": 1.15})
+
+        # --- HOJA 3: 34 CORRIENTES JICA + GRÁFICO DE SÓLIDOS ---
+        df_34_r = df_34.round(2)
+        df_34_r.to_excel(writer, sheet_name="34_Corrientes_JICA", index=False)
+        ws_34 = writer.sheets["34_Corrientes_JICA"]
+        for c_idx, col_name in enumerate(df_34_r.columns):
+            ws_34.write(0, c_idx, col_name, fmt_header)
+            ws_34.set_column(c_idx, c_idx, 38 if c_idx == 1 else 18)
+            for r_idx in range(1, len(df_34_r) + 1):
+                val = df_34_r.iloc[r_idx - 1, c_idx]
+                ws_34.write(r_idx, c_idx, val, fmt_text if c_idx == 1 else fmt_num)
+
+        chart_sol = workbook.add_chart({"type": "line"})
+        chart_sol.add_series({
+            "name": "Sólidos (kg/h)",
+            "categories": ["34_Corrientes_JICA", 1, 0, len(df_34_r), 0],
+            "values": ["34_Corrientes_JICA", 1, 2, len(df_34_r), 2],
+            "line": {"color": "#1E3A8A", "width": 2.0}
+        })
+        chart_sol.set_title({"name": "Perfil de Flujo de Sólidos en las 34 Corrientes (kg/h)"})
+        chart_sol.set_x_axis({"name": "N° Corriente"})
+        chart_sol.set_y_axis({"name": "Sólidos (kg/h)"})
+        ws_34.insert_chart("A37", chart_sol, {"x_scale": 1.6, "y_scale": 1.15})
+
     buffer_excel.seek(0)
 
     col_dl1, col_dl2 = st.columns(2)
