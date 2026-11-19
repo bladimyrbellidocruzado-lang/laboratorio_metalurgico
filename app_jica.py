@@ -1,4 +1,5 @@
 ﻿import io
+from datetime import datetime
 from pathlib import Path
 import streamlit as st
 import streamlit.components.v1 as components
@@ -25,7 +26,7 @@ html, body, [class*="css"] {
 
 .block-container {
     padding-top: 1.25rem;
-    padding-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
     max-width: 98%;
 }
 
@@ -59,7 +60,8 @@ footer {
 .header-bar {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
+    align-items: center;
+    gap: 12px;
     background-color: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-left: 4px solid #1E3A8A;
@@ -113,17 +115,19 @@ footer {
     border: 1px solid #FECACA;
 }
 
-/* Tarjetas KPI corporativas */
+/* Tarjetas KPI corporativas con simetría vertical */
 .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 10px;
     margin-bottom: 12px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 @media (max-width: 1100px) {
     .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 
@@ -132,29 +136,41 @@ footer {
     border: 1px solid #E2E8F0;
     border-radius: 6px;
     padding: 11px 14px;
+    min-height: 92px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    box-sizing: border-box;
+}
+
+.kpi-top {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
 }
 
 .kpi-label {
-    font-size: 0.72rem;
+    font-size: 0.71rem;
     font-weight: 600;
     color: #475569;
     text-transform: uppercase;
     letter-spacing: 0.03em;
-    margin-bottom: 4px;
 }
 
 .kpi-value {
-    font-size: 1.25rem;
+    font-size: 1.24rem;
     font-weight: 700;
     color: #0F172A;
-    margin-bottom: 3px;
+    line-height: 1.2;
 }
 
 .kpi-delta {
-    font-size: 0.75rem;
+    font-size: 0.74rem;
     font-weight: 500;
     color: #1E3A8A;
+    line-height: 1.25;
+    margin-top: 6px;
 }
 
 /* Alertas técnicas compactas */
@@ -219,6 +235,19 @@ div[data-testid="stExpander"] {
     border-radius: 6px;
     margin-bottom: 8px;
 }
+
+/* Barra de estado técnica inferior */
+.status-footer {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: #64748B;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -228,7 +257,8 @@ st.sidebar.markdown("## Control de Proceso JICA")
 tema_plano = st.sidebar.radio(
     "Estilo del Diagrama",
     ["Plano CAD (Blanco Técnico)", "SCADA (Oscuro)"],
-    index=0
+    index=0,
+    horizontal=True
 )
 
 esquema_mineral = st.sidebar.selectbox(
@@ -250,35 +280,35 @@ else:
     m1_sym, m2_sym = "Cu", "Pb"
     d_m1_f, d_m2_f, d_fe_f = 1.60, 3.40, 13.0
 
-with st.sidebar.expander("1. Chancado y Molienda (Eq. 1-8)", expanded=True):
-    F_kgh = st.number_input("Alimento Fresco [Corr. 1] (kg/h)", min_value=100.0, max_value=800.0, value=325.0, step=25.0)
-    f80_alim_mm = st.number_input("F80 Alimento Fresco (mm)", min_value=25.0, max_value=127.0, value=105.0, step=5.0)
-    set_mandibulas_mm = st.number_input("Set Chanc. Mandíbulas [Eq. 1] (mm)", min_value=12.0, max_value=38.0, value=26.0, step=1.0)
-    set_rodillos_mm = st.number_input("Set Chanc. Rodillos [Eq. 2] (mm)", min_value=3.0, max_value=15.0, value=6.5, step=0.5)
-    wi_bond = st.number_input("Work Index Bond Wi (kWh/t)", min_value=8.0, max_value=25.0, value=13.8, step=0.2)
-    sol_molino = st.number_input("% Sólidos Molino 2'x2' [Eq. 5]", min_value=55.0, max_value=84.0, value=72.0, step=1.0)
-    cc_espiral_pct = st.number_input("Carga Circulante Espiral [Eq. 6] (%)", min_value=80.0, max_value=320.0, value=210.0, step=10.0)
-    sol_rebose = st.number_input("% Sólidos Rebose [Corr. 10/12]", min_value=20.0, max_value=45.0, value=30.0, step=1.0)
-    sg_mineral = st.number_input("Gravedad Específica Mineral (SG)", min_value=2.5, max_value=4.5, value=2.95, step=0.05)
+with st.sidebar.expander("1. Chancado y Molienda", expanded=True):
+    F_kgh = st.number_input("Alimento Fresco (kg/h)", min_value=100.0, max_value=800.0, value=325.0, step=25.0, help="Corriente 1 — Alimentación fresca a Chancadora de Mandíbulas [Equipo 1]")
+    f80_alim_mm = st.number_input("F80 Alimento Fresco (mm)", min_value=25.0, max_value=127.0, value=105.0, step=5.0, help="Tamaño característico F80 del mineral fresco [Corriente 1]")
+    set_mandibulas_mm = st.number_input("Set Chanc. Mandíbulas (mm)", min_value=12.0, max_value=38.0, value=26.0, step=1.0, help="CSS — Closed Side Setting de Chancadora de Mandíbulas [Equipo 1]")
+    set_rodillos_mm = st.number_input("Set Chanc. Rodillos (mm)", min_value=3.0, max_value=15.0, value=6.5, step=0.5, help="Abertura entre rodillos de chancadora secundaria [Equipo 2]")
+    wi_bond = st.number_input("Work Index Bond Wi (kWh/t)", min_value=8.0, max_value=25.0, value=13.8, step=0.2, help="Índice de trabajo de Bond para cálculo energético en molienda [Equipo 5]")
+    sol_molino = st.number_input("% Sólidos Molino 2'x2'", min_value=55.0, max_value=84.0, value=72.0, step=1.0, help="Porcentaje de sólidos en peso en la alimentación al Molino de Bolas 2'x2' [Equipo 5 / Corriente 5]")
+    cc_espiral_pct = st.number_input("Carga Circulante Espiral (%)", min_value=80.0, max_value=320.0, value=210.0, step=10.0, help="Relación de arenas recirculadas [Corriente 9] respecto al alimento fresco en Clasificador Helicoidal [Equipo 6]")
+    sol_rebose = st.number_input("% Sólidos Rebose", min_value=20.0, max_value=45.0, value=30.0, step=1.0, help="Porcentaje de sólidos en peso en el rebose del clasificador [Corrientes 10 / 12]")
+    sg_mineral = st.number_input("Gravedad Específica Mineral (SG)", min_value=2.5, max_value=4.5, value=2.95, step=0.05, help="Densidad relativa de sólidos (t/m³) para conversión de flujos másicos a volumétricos")
 
 with st.sidebar.expander(f"2. Leyes de Cabeza ({m1_sym}, {m2_sym}, Fe) y Reactivos", expanded=False):
-    ley_f_m1 = st.number_input(f"Ley Cabeza {m1_sym} (%)", min_value=0.2, max_value=20.0, value=d_m1_f, step=0.1)
-    ley_f_m2 = st.number_input(f"Ley Cabeza {m2_sym} (%)", min_value=0.5, max_value=25.0, value=d_m2_f, step=0.1)
-    ley_f_fe = st.number_input("Ley Cabeza Fe / Pirita (%)", min_value=1.0, max_value=45.0, value=d_fe_f, step=0.5)
-    ph_c1 = st.number_input("pH Acondicionamiento C1 [Eq. 9-10]", min_value=6.5, max_value=11.5, value=8.5, step=0.1)
-    dosis_dep_c1 = st.number_input("Depresor ZnSO4 Acond. 1 (g/t)", min_value=0.0, max_value=800.0, value=250.0, step=25.0)
-    dosis_col_c1 = st.number_input("Colector Z-11 Acond. 2 (g/t)", min_value=5.0, max_value=150.0, value=35.0, step=5.0)
-    ph_c2 = st.number_input("pH Acondicionamiento C2 [Eq. 18-19]", min_value=8.0, max_value=12.5, value=10.8, step=0.1)
-    dosis_act_c2 = st.number_input("Activador CuSO4 Acond. 3 (g/t)", min_value=50.0, max_value=1000.0, value=350.0, step=25.0)
-    dosis_col_c2 = st.number_input("Colector Z-6 Acond. 4 (g/t)", min_value=5.0, max_value=150.0, value=45.0, step=5.0)
+    ley_f_m1 = st.number_input(f"Ley Cabeza {m1_sym} (%)", min_value=0.2, max_value=20.0, value=d_m1_f, step=0.1, help=f"Ley inicial de {m1_sym} en el alimento fresco [Corriente 1]")
+    ley_f_m2 = st.number_input(f"Ley Cabeza {m2_sym} (%)", min_value=0.5, max_value=25.0, value=d_m2_f, step=0.1, help=f"Ley inicial de {m2_sym} en el alimento fresco [Corriente 1]")
+    ley_f_fe = st.number_input("Ley Cabeza Fe / Pirita (%)", min_value=1.0, max_value=45.0, value=d_fe_f, step=0.5, help="Contenido de hierro / sulfuros de hierro en cabeza [Corriente 1]")
+    ph_c1 = st.number_input("pH Acondicionamiento C1", min_value=6.5, max_value=11.5, value=8.5, step=0.1, help="pH de pulpa en Acondicionadores 1 y 2 [Equipos 9 y 10]")
+    dosis_dep_c1 = st.number_input("Depresor ZnSO4 Acond. 1 (g/t)", min_value=0.0, max_value=800.0, value=250.0, step=25.0, help="Dosificación de sulfato de zinc en Acondicionador 1 [Equipo 9]")
+    dosis_col_c1 = st.number_input("Colector Z-11 Acond. 2 (g/t)", min_value=5.0, max_value=150.0, value=35.0, step=5.0, help="Dosificación de xantato colector en Acondicionador 2 [Equipo 10]")
+    ph_c2 = st.number_input("pH Acondicionamiento C2", min_value=8.0, max_value=12.5, value=10.8, step=0.1, help="pH alcalino en Acondicionadores 3 y 4 del Circuito 2 [Equipos 18 y 19]")
+    dosis_act_c2 = st.number_input("Activador CuSO4 Acond. 3 (g/t)", min_value=50.0, max_value=1000.0, value=350.0, step=25.0, help="Dosificación de sulfato de cobre como activador en Acondicionador 3 [Equipo 18]")
+    dosis_col_c2 = st.number_input("Colector Z-6 Acond. 4 (g/t)", min_value=5.0, max_value=150.0, value=45.0, step=5.0, help="Dosificación de colector en Acondicionador 4 [Equipo 19]")
 
-with st.sidebar.expander("3. Selectividad de Bancos (Eq. 11-22)", expanded=False):
-    rec_ro1 = st.number_input("Rec. Rougher C1 [Eq. 11] (%)", min_value=55.0, max_value=95.0, value=82.0, step=1.0)
-    rec_cl1 = st.number_input("Rec. Cleaner 1 [Eq. 12] (%)", min_value=60.0, max_value=98.0, value=88.0, step=1.0)
-    rec_scv1 = st.number_input("Rec. Scavenger C1 [Eq. 13] (%)", min_value=25.0, max_value=85.0, value=55.0, step=1.0)
-    rec_ro2 = st.number_input("Rec. Rougher C2 [Eq. 20] (%)", min_value=55.0, max_value=95.0, value=80.0, step=1.0)
-    rec_cl2 = st.number_input("Rec. Cleaner 2 [Eq. 21] (%)", min_value=60.0, max_value=98.0, value=86.0, step=1.0)
-    rec_scv2 = st.number_input("Rec. Scavenger C2 [Eq. 22] (%)", min_value=25.0, max_value=85.0, value=50.0, step=1.0)
+with st.sidebar.expander("3. Selectividad de Bancos", expanded=False):
+    rec_ro1 = st.number_input("Rec. Rougher C1 (%)", min_value=55.0, max_value=95.0, value=82.0, step=1.0, help="Recuperación de etapa en Banco Rougher Circuito 1 [Equipo 11]")
+    rec_cl1 = st.number_input("Rec. Cleaner 1 (%)", min_value=60.0, max_value=98.0, value=88.0, step=1.0, help="Recuperación de etapa en Banco Cleaner 1 [Equipo 12]")
+    rec_scv1 = st.number_input("Rec. Scavenger C1 (%)", min_value=25.0, max_value=85.0, value=55.0, step=1.0, help="Recuperación de etapa en Banco Scavenger Circuito 1 [Equipo 13]")
+    rec_ro2 = st.number_input("Rec. Rougher C2 (%)", min_value=55.0, max_value=95.0, value=80.0, step=1.0, help="Recuperación de etapa en Banco Rougher Circuito 2 [Equipo 20]")
+    rec_cl2 = st.number_input("Rec. Cleaner 2 (%)", min_value=60.0, max_value=98.0, value=86.0, step=1.0, help="Recuperación de etapa en Banco Cleaner 2 [Equipo 21]")
+    rec_scv2 = st.number_input("Rec. Scavenger C2 (%)", min_value=25.0, max_value=85.0, value=50.0, step=1.0, help="Recuperación de etapa en Banco Scavenger Circuito 2 [Equipo 22]")
 
 # ==================== MOTOR METALÚRGICO (RESULTADOS CALCULADOS) ====================
 def simular_planta(
@@ -361,6 +391,10 @@ def simular_planta(
 
     pulpa_rebose_lmin = ((s10_rebose / sg_val) + w10_rebose) / 60.0
 
+    # Verificación de cierre de balance de masa en sólidos (kg/h)
+    suma_salidas_solidos = s17_c1 + s29_c2 + s34_relave
+    error_masa_pct = abs(F_val - suma_salidas_solidos) / max(F_val, 1e-9) * 100.0
+
     return {
         "p80_mand_mm": p80_mand_mm, "p80_rod_mm": p80_rod_mm, "f80_mol_um": f80_mol_um,
         "p80_reb_calc": p80_reb_calc, "s9_arenas": s9_arenas, "s5_alim_mol": s5_alim_mol,
@@ -377,7 +411,8 @@ def simular_planta(
         "fino_m1_c1": fino_m1_c1, "fino_m1_c2": fino_m1_c2, "fino_m1_rel": fino_m1_rel,
         "ley_rel_m1": ley_rel_m1, "fino_m2_alim": fino_m2_alim, "fino_m2_c1": fino_m2_c1,
         "fino_m2_c2": fino_m2_c2, "fino_m2_rel": fino_m2_rel, "ley_rel_m2": ley_rel_m2,
-        "pulpa_rebose_lmin": pulpa_rebose_lmin
+        "pulpa_rebose_lmin": pulpa_rebose_lmin,
+        "error_masa_pct": error_masa_pct
     }
 
 res = simular_planta(
@@ -402,7 +437,7 @@ base = st.session_state["caso_base"]
 def delta_str(actual, ref, sufijo=""):
     diff = actual - ref
     if abs(diff) < 1e-4:
-        return f"Base ({actual:.2f}{sufijo})"
+        return f"Base: {actual:.2f}{sufijo}"
     signo = "+" if diff > 0 else ""
     return f"{signo}{diff:.2f}{sufijo} vs. base"
 
@@ -440,7 +475,7 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ==================== TARJETAS KPI SUPERIORES ====================
+# ==================== TARJETAS KPI SUPERIORES SIMÉTRICAS ====================
 kpis = [
     ("P80 Rebose [Corr. 10]", f"{res['p80_reb_calc']:.1f} µm", delta_str(res["p80_reb_calc"], base["p80_reb_calc"], " µm")),
     (f"Conc. C1 ({m1_sym}) [Corr. 17]", f"{res['s17_c1']:.2f} kg/h", f"Ley {res['ley_c1_m1']:.1f}% | {delta_str(res['rec_glob_c1'], base['rec_glob_c1'], '% Rec')}"),
@@ -450,7 +485,7 @@ kpis = [
 ]
 
 kpi_cards_html = "".join([
-    f'<div class="kpi-card"><div class="kpi-label">{lbl}</div><div class="kpi-value">{val}</div><div class="kpi-delta">{dl}</div></div>'
+    f'<div class="kpi-card"><div class="kpi-top"><div class="kpi-label">{lbl}</div><div class="kpi-value">{val}</div></div><div class="kpi-delta">{dl}</div></div>'
     for lbl, val, dl in kpis
 ])
 st.markdown(f'<div class="kpi-grid">{kpi_cards_html}</div>', unsafe_allow_html=True)
@@ -525,7 +560,7 @@ tab_pfd, tab_et1, tab_sens, tab_34 = st.tabs([
     "Balance de 34 Corrientes y Exportación"
 ])
 
-# -------------------- PESTAÑA 1: FLOWSHEET CON TOOLBAR Y LEYENDA TÉCNICA --------------------
+# -------------------- PESTAÑA 1: FLOWSHEET CON TOOLBAR, ZOOM RESPONSIVO Y HALO EN TEXTOS --------------------
 with tab_pfd:
     st.markdown('<div class="toolbar-panel">', unsafe_allow_html=True)
     col_ctrl1, col_ctrl2, col_ctrl3, col_ctrl4 = st.columns([1.35, 1.35, 1.15, 1.15])
@@ -575,6 +610,7 @@ with tab_pfd:
     es_claro = "Blanco" in tema_plano
     bg_svg = "#FFFFFF" if es_claro else "#0F172A"
     fg_txt = "#0F172A" if es_claro else "#E2E8F0"
+    halo_color = "#FFFFFF" if es_claro else "#0F172A"
     eq_fill = "#F1F5F9" if es_claro else "#1E293B"
     eq_stroke = "#1E293B" if es_claro else "#94A3B8"
     line_main = "#1E3A8A" if es_claro else "#38BDF8"
@@ -588,7 +624,12 @@ with tab_pfd:
     op_rel = "1.0" if "Relave" in ruta_sel or "Todas" in ruta_sel else "0.18"
     op_rec = "1.0" if "Recirculaciones" in ruta_sel or "Todas" in ruta_sel else "0.22"
 
-    svg_only = f"""<svg viewBox="0 0 1250 760" width="{zoom_pct}%" height="680" xmlns="http://www.w3.org/2000/svg" style="font-family: Inter, Arial, sans-serif; background:{bg_svg};">
+    # Altura proporcional automática cuando zoom == 100%, o expandida con scroll delgado si zoom > 100%
+    svg_width_attr = "100%" if zoom_pct == 100 else f"{zoom_pct}%"
+    svg_height_attr = "auto" if zoom_pct == 100 else f"{int(640 * (zoom_pct / 100.0))}px"
+    overflow_css = "overflow: hidden;" if zoom_pct == 100 else "overflow: auto; max-height: 670px;"
+
+    svg_only = f"""<svg viewBox="0 0 1250 760" width="{svg_width_attr}" height="{svg_height_attr}" xmlns="http://www.w3.org/2000/svg" style="display:block; font-family: Inter, Arial, sans-serif; background:{bg_svg};">
       <defs>
         <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M 0 1 L 10 5 L 0 9 z" fill="{line_main}"/>
@@ -599,275 +640,306 @@ with tab_pfd:
         <marker id="arr-conc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
           <path d="M 0 1 L 10 5 L 0 9 z" fill="{line_conc}"/>
         </marker>
+        <style>
+          .lbl {{ paint-order: stroke; stroke: {halo_color}; stroke-width: 3.2px; stroke-linecap: round; stroke-linejoin: round; }}
+        </style>
       </defs>
 
       <!-- CONMINUCIÓN Y CLASIFICACIÓN (EQUIPOS 1 AL 8) -->
       <circle cx="85" cy="25" r="7" fill="none" stroke="{line_main}" stroke-width="2"/>
-      <text x="100" y="29" fill="{fg_txt}" font-size="11" font-weight="bold">ALIMENTO ({F_kgh:.0f} kg/h)</text>
+      <text x="100" y="29" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ALIMENTO ({F_kgh:.0f} kg/h)</text>
       <line x1="85" y1="32" x2="85" y2="62" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="72" y="50" fill="{line_main}" font-size="11" font-weight="bold">1</text>
+      <text x="70" y="50" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">1</text>
 
       <polygon points="65,65 80,65 80,115 70,115" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
       <polygon points="108,65 95,65 86,115 96,115" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
       <circle cx="106" cy="100" r="8" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="70" y="92" fill="{fg_txt}" font-size="11" font-weight="bold">1</text>
-      <text x="122" y="82" fill="{fg_txt}" font-size="11" font-weight="bold">CHANCADORA DE MANDÍBULAS</text>
-      <text x="122" y="96" fill="{fg_txt}" font-size="10">Set: {set_mandibulas_mm:.0f} mm | P80 calc: {res['p80_mand_mm']:.1f} mm</text>
+      <text x="70" y="92" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">1</text>
+      <text x="122" y="82" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">CHANCADORA DE MANDÍBULAS</text>
+      <text x="122" y="96" fill="{fg_txt}" font-size="10" class="lbl">Set: {set_mandibulas_mm:.0f} mm | P80 calc: {res['p80_mand_mm']:.1f} mm</text>
 
       <line x1="85" y1="117" x2="85" y2="152" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="72" y="138" fill="{line_main}" font-size="11" font-weight="bold">2</text>
+      <text x="70" y="138" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">2</text>
 
       <polygon points="73,152 97,152 91,168 79,168" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
       <circle cx="71" cy="180" r="14" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
       <circle cx="99" cy="180" r="14" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="81" y="164" fill="{fg_txt}" font-size="11" font-weight="bold">2</text>
-      <text x="122" y="176" fill="{fg_txt}" font-size="11" font-weight="bold">CHANCADORA DE RODILLOS</text>
-      <text x="122" y="190" fill="{fg_txt}" font-size="10">Luz: {set_rodillos_mm:.1f} mm | P80 calc: {res['p80_rod_mm']:.1f} mm</text>
+      <text x="81" y="164" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">2</text>
+      <text x="122" y="176" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">CHANCADORA DE RODILLOS</text>
+      <text x="122" y="190" fill="{fg_txt}" font-size="10" class="lbl">Luz: {set_rodillos_mm:.1f} mm | P80 calc: {res['p80_rod_mm']:.1f} mm</text>
 
       <line x1="85" y1="196" x2="85" y2="232" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="72" y="217" fill="{line_main}" font-size="11" font-weight="bold">3</text>
+      <text x="70" y="217" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">3</text>
 
       <polygon points="65,235 105,235 105,275 89,302 81,302 65,275" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="81" y="268" fill="{fg_txt}" font-size="12" font-weight="bold">3</text>
-      <text x="115" y="262" fill="{fg_txt}" font-size="11" font-weight="bold">TOLVA DE FINOS</text>
-      <text x="115" y="276" fill="{fg_txt}" font-size="10">{F_kgh:.0f} kg/h | F80: {res['f80_mol_um']:.0f} µm</text>
+      <text x="81" y="268" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">3</text>
+      <text x="115" y="262" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">TOLVA DE FINOS</text>
+      <text x="115" y="276" fill="{fg_txt}" font-size="10" class="lbl">{F_kgh:.0f} kg/h | F80: {res['f80_mol_um']:.0f} µm</text>
 
       <line x1="85" y1="302" x2="85" y2="348" stroke="{line_main}" stroke-width="2"/>
       <line x1="85" y1="348" x2="118" y2="348" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="72" y="330" fill="{line_main}" font-size="11" font-weight="bold">4</text>
+      <text x="68" y="330" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">4</text>
       <circle cx="126" cy="348" r="8" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="123" y="334" fill="{fg_txt}" font-size="11" font-weight="bold">4</text>
+      <text x="122" y="334" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">4</text>
 
-      <circle cx="165" cy="298" r="6" fill="none" stroke="{line_main}" stroke-width="2"/>
-      <text x="176" y="302" fill="{line_main}" font-size="10" font-weight="bold">AGUA ENTRADA [6] ({res['w6_agua_ent']:.0f} L/h)</text>
-      <line x1="160" y1="304" x2="132" y2="340" stroke="{line_main}" stroke-width="1.8" marker-end="url(#arr)"/>
+      <!-- AGUA ENTRADA [6] separada de nodos y líneas -->
+      <circle cx="168" cy="292" r="5.5" fill="none" stroke="{line_main}" stroke-width="2"/>
+      <text x="179" y="295" fill="{line_main}" font-size="10" font-weight="bold" class="lbl">AGUA ENTRADA [6] ({res['w6_agua_ent']:.0f} L/h)</text>
+      <line x1="163" y1="297" x2="133" y2="339" stroke="{line_main}" stroke-width="1.8" marker-end="url(#arr)"/>
 
       <line x1="134" y1="348" x2="178" y2="348" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="152" y="342" fill="{line_main}" font-size="11" font-weight="bold">5</text>
+      <text x="148" y="341" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">5</text>
 
+      <!-- MOLINO DE BOLAS 2'x2' [5] con etiquetas limpias -->
       <polygon points="180,338 192,326 192,370 180,358" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
       <rect x="192" y="316" width="68" height="64" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
       <rect x="260" y="310" width="8" height="76" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
       <rect x="268" y="336" width="12" height="24" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="222" y="352" fill="{fg_txt}" font-size="13" font-weight="bold">5</text>
-      <text x="155" y="400" fill="{fg_txt}" font-size="11" font-weight="bold">MOLINO DE BOLAS 2'x2'</text>
-      <text x="155" y="414" fill="{fg_txt}" font-size="10">Carga: {res['s5_alim_mol']:.0f} kg/h ({sol_molino:.0f}% Sól)</text>
+      <text x="222" y="352" fill="{fg_txt}" font-size="13" font-weight="bold" class="lbl">5</text>
+      <text x="150" y="398" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">MOLINO DE BOLAS 2'x2'</text>
+      <text x="150" y="412" fill="{fg_txt}" font-size="10" class="lbl">Carga: {res['s5_alim_mol']:.0f} kg/h ({sol_molino:.0f}% Sól)</text>
 
       <polyline points="280,348 293,348 293,505" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="280" y="425" fill="{line_main}" font-size="11" font-weight="bold">7</text>
+      <text x="278" y="425" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">7</text>
 
-      <circle cx="348" cy="462" r="5.5" fill="none" stroke="{line_main}" stroke-width="2"/>
-      <text x="315" y="438" fill="{line_main}" font-size="9" font-weight="bold">AGUA SALIDA [8]</text>
-      <text x="322" y="450" fill="{line_main}" font-size="9">({res['w8_agua_sal']:.0f} L/h)</text>
-      <line x1="344" y1="468" x2="315" y2="510" stroke="{line_main}" stroke-width="1.8" marker-end="url(#arr)"/>
+      <!-- AGUA SALIDA [8] con holgura respecto a corriente 7 y 12 -->
+      <circle cx="352" cy="458" r="5.5" fill="none" stroke="{line_main}" stroke-width="2"/>
+      <text x="315" y="432" fill="{line_main}" font-size="9.5" font-weight="bold" class="lbl">AGUA SALIDA [8]</text>
+      <text x="322" y="444" fill="{line_main}" font-size="9" class="lbl">({res['w8_agua_sal']:.0f} L/h)</text>
+      <line x1="348" y1="464" x2="316" y2="510" stroke="{line_main}" stroke-width="1.8" marker-end="url(#arr)"/>
 
       <polygon points="205,438 320,515 320,545 290,545 205,472" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
       <line x1="212" y1="455" x2="305" y2="528" stroke="{eq_stroke}" stroke-width="2" stroke-dasharray="6,4"/>
-      <text x="262" y="505" fill="{fg_txt}" font-size="12" font-weight="bold">6</text>
-      <text x="155" y="535" fill="{fg_txt}" font-size="11" font-weight="bold">CLASIFICADOR HELICOIDAL</text>
-      <text x="155" y="549" fill="{fg_txt}" font-size="10">CC: {cc_espiral_pct:.0f}% | P80 rebose: {res['p80_reb_calc']:.0f} µm</text>
+      <text x="262" y="505" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">6</text>
+      <text x="148" y="534" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">CLASIFICADOR HELICOIDAL</text>
+      <text x="148" y="548" fill="{fg_txt}" font-size="10" class="lbl">CC: {cc_espiral_pct:.0f}% | P80 rebose: {res['p80_reb_calc']:.0f} µm</text>
 
       <g opacity="{op_rec}">
         <polyline points="205,455 126,455 126,358" fill="none" stroke="{line_rec}" stroke-width="2.2" stroke-dasharray="5,3" marker-end="url(#arr-rec)"/>
-        <text x="112" y="415" fill="{line_rec}" font-size="11" font-weight="bold">9 ({res['s9_arenas']:.0f})</text>
+        <text x="108" y="415" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">9 ({res['s9_arenas']:.0f})</text>
       </g>
 
       <polyline points="320,532 345,532 345,575" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="350" y="555" fill="{line_main}" font-size="11" font-weight="bold">10</text>
+      <text x="350" y="555" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">10</text>
       <polygon points="327,578 363,578 363,615 345,638 327,615" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="341" y="608" fill="{fg_txt}" font-size="12" font-weight="bold">7</text>
-      <text x="250" y="612" fill="{fg_txt}" font-size="11" font-weight="bold">SUMIDERO 1</text>
+      <text x="341" y="608" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">7</text>
+      <text x="255" y="612" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">SUMIDERO 1</text>
 
       <line x1="345" y1="638" x2="345" y2="675" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="350" y="660" fill="{line_main}" font-size="11" font-weight="bold">11</text>
+      <text x="350" y="660" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">11</text>
       <circle cx="345" cy="690" r="13" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
       <polygon points="333,704 357,704 352,698 338,698" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
-      <text x="341" y="694" fill="{fg_txt}" font-size="11" font-weight="bold">8</text>
-      <text x="275" y="695" fill="{fg_txt}" font-size="11" font-weight="bold">BOMBA 1</text>
+      <text x="341" y="694" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">8</text>
+      <text x="282" y="695" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BOMBA 1</text>
 
       <polyline points="358,690 388,690 388,35 452,35 452,58" fill="none" stroke="{line_main}" stroke-width="2.2" marker-end="url(#arr)"/>
-      <text x="394" y="295" fill="{line_main}" font-size="11" font-weight="bold">12 ({res['s10_rebose']:.0f} kg/h)</text>
-      <text x="394" y="310" fill="{line_main}" font-size="10">P80: {res['p80_reb_calc']:.0f} µm</text>
+      <text x="394" y="295" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">12 ({res['s10_rebose']:.0f} kg/h)</text>
+      <text x="394" y="310" fill="{line_main}" font-size="10" class="lbl">P80: {res['p80_reb_calc']:.0f} µm</text>
 
       <!-- CIRCUITO 1 (C1) -->
       <g opacity="{op_c1}">
         <polygon points="440,62 480,62 480,102 460,124 440,102" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="456" y="92" fill="{fg_txt}" font-size="12" font-weight="bold">9</text>
-        <text x="488" y="85" fill="{fg_txt}" font-size="11" font-weight="bold">ACOND. 1 (pH {ph_c1:.1f})</text>
+        <text x="456" y="92" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">9</text>
+        <text x="488" y="85" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACOND. 1 (pH {ph_c1:.1f})</text>
 
         <polyline points="460,124 460,140 520,140 520,158" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="482" y="135" fill="{line_main}" font-size="11" font-weight="bold">13</text>
+        <text x="482" y="135" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">13</text>
         <polygon points="500,162 540,162 540,202 520,224 500,202" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="513" y="192" fill="{fg_txt}" font-size="12" font-weight="bold">10</text>
-        <text x="435" y="192" fill="{fg_txt}" font-size="11" font-weight="bold">ACOND. 2</text>
+        <text x="513" y="192" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">10</text>
+        <text x="435" y="192" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACOND. 2</text>
 
         <polyline points="520,224 520,242 585,242" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="498" y="257" fill="{line_main}" font-size="10" font-weight="bold">14 ({res['s14_alim_ro1']:.0f} kg/h)</text>
+        <text x="498" y="257" fill="{line_main}" font-size="10" font-weight="bold" class="lbl">14 ({res['s14_alim_ro1']:.0f} kg/h)</text>
 
         <rect x="588" y="210" width="200" height="52" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
         <line x1="638" y1="210" x2="638" y2="262" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="688" y1="210" x2="688" y2="262" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="738" y1="210" x2="738" y2="262" stroke="{eq_stroke}" stroke-width="1.5"/>
         <polyline points="588,225 765,232 788,215" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="605" y="245" fill="{fg_txt}" font-size="12" font-weight="bold">11</text>
-        <text x="625" y="202" fill="{fg_txt}" font-size="11" font-weight="bold">BANC. CEL. RO. C1 (4 Celdas)</text>
+        <text x="605" y="245" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">11</text>
+        <text x="625" y="202" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BANC. CEL. RO. C1 (4 Celdas)</text>
 
         <polyline points="755,210 755,152 875,152" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="780" y="145" fill="{line_main}" font-size="11" font-weight="bold">15 ({res['s15_esp_ro1']:.1f} kg/h)</text>
+        <text x="780" y="145" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">15 ({res['s15_esp_ro1']:.1f} kg/h)</text>
         <rect x="878" y="135" width="96" height="48" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
         <line x1="926" y1="135" x2="926" y2="183" stroke="{eq_stroke}" stroke-width="1.5"/>
         <polyline points="878,148 955,154 974,140" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="892" y="168" fill="{fg_txt}" font-size="12" font-weight="bold">12</text>
-        <text x="878" y="200" fill="{fg_txt}" font-size="11" font-weight="bold">BAN. CEL. CL. 1</text>
+        <text x="892" y="168" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">12</text>
+        <text x="878" y="200" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BAN. CEL. CL. 1</text>
 
         <polyline points="945,135 945,82 775,82" fill="none" stroke="{line_conc}" stroke-width="2.5" marker-end="url(#arr-conc)"/>
         <circle cx="765" cy="82" r="7" fill="none" stroke="{line_conc}" stroke-width="2"/>
-        <text x="845" y="75" fill="{line_conc}" font-size="11" font-weight="bold">17</text>
-        <text x="665" y="104" fill="{line_conc}" font-size="12" font-weight="bold">CONC. FINAL C1 ({res['s17_c1']:.2f} kg/h | Ley {m1_sym}: {res['ley_c1_m1']:.1f}% | Rec: {res['rec_glob_c1']:.1f}%)</text>
+        <text x="845" y="75" fill="{line_conc}" font-size="11" font-weight="bold" class="lbl">17</text>
+        <text x="665" y="104" fill="{line_conc}" font-size="12" font-weight="bold" class="lbl">CONC. FINAL C1 ({res['s17_c1']:.2f} kg/h | Ley {m1_sym}: {res['ley_c1_m1']:.1f}% | Rec: {res['rec_glob_c1']:.1f}%)</text>
 
         <polyline points="788,242 998,242 998,338 935,338" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="860" y="236" fill="{line_main}" font-size="11" font-weight="bold">16 ({res['s16_cola_ro1']:.1f} kg/h)</text>
+        <text x="860" y="236" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">16 ({res['s16_cola_ro1']:.1f} kg/h)</text>
         <rect x="680" y="308" width="250" height="52" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
         <line x1="730" y1="308" x2="730" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="780" y1="308" x2="780" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="830" y1="308" x2="830" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="880" y1="308" x2="880" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
         <polyline points="930,322 705,328 680,312" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="905" y="344" fill="{fg_txt}" font-size="12" font-weight="bold">13</text>
-        <text x="695" y="298" fill="{fg_txt}" font-size="11" font-weight="bold">BANCO DE CELDAS SCV. CIRCUITO 1 (5 Celdas)</text>
+        <text x="905" y="344" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">13</text>
+        <text x="695" y="298" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BANCO DE CELDAS SCV. CIRCUITO 1 (5 Celdas)</text>
 
         <polyline points="974,162 1062,162 1062,395" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="1068" y="280" fill="{line_rec}" font-size="11" font-weight="bold">18</text>
+        <text x="1068" y="280" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">18</text>
         <polyline points="710,360 710,382 1042,382 1042,395" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="850" y="377" fill="{line_rec}" font-size="11" font-weight="bold">19</text>
+        <text x="850" y="377" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">19</text>
 
         <polygon points="1032,398 1072,398 1072,435 1052,456 1032,435" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="1044" y="428" fill="{fg_txt}" font-size="12" font-weight="bold">14</text>
-        <text x="948" y="428" fill="{fg_txt}" font-size="11" font-weight="bold">SUMIDERO 2</text>
+        <text x="1044" y="428" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">14</text>
+        <text x="948" y="428" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">SUMIDERO 2</text>
 
         <polyline points="1052,456 1052,482 1085,482" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="1035" y="474" fill="{line_rec}" font-size="11" font-weight="bold">20</text>
+        <text x="1035" y="474" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">20</text>
         <circle cx="1102" cy="482" r="13" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
         <polygon points="1090,496 1114,496 1109,490 1095,490" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="1095" y="486" fill="{fg_txt}" font-size="11" font-weight="bold">15</text>
-        <text x="1080" y="462" fill="{fg_txt}" font-size="11" font-weight="bold">BOM. 2</text>
+        <text x="1095" y="486" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">15</text>
+        <text x="1080" y="462" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BOM. 2</text>
 
         <g opacity="{op_rec}">
           <polyline points="1115,482 1175,482 1175,18 468,18 468,58" fill="none" stroke="{line_rec}" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-rec)"/>
-          <text x="795" y="14" fill="{line_rec}" font-size="11" font-weight="bold">21 (Medios C1: {res['s21_medios_c1']:.1f} kg/h)</text>
+          <text x="795" y="14" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">21 (Medios C1: {res['s21_medios_c1']:.1f} kg/h)</text>
         </g>
       </g>
 
       <!-- TRANSFERENCIA C1 -> C2 Y CIRCUITO 2 (C2) -->
       <polyline points="680,342 622,342 622,368" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="642" y="336" fill="{line_main}" font-size="11" font-weight="bold">22</text>
+      <text x="642" y="336" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">22</text>
       <polygon points="602,372 642,372 642,408 622,428 602,408" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="614" y="402" fill="{fg_txt}" font-size="12" font-weight="bold">16</text>
-      <text x="518" y="398" fill="{fg_txt}" font-size="11" font-weight="bold">SUMIDERO 3</text>
+      <text x="614" y="402" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">16</text>
+      <text x="518" y="398" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">SUMIDERO 3</text>
 
       <polyline points="622,428 622,452 572,452" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="595" y="446" fill="{line_main}" font-size="11" font-weight="bold">23</text>
+      <text x="595" y="446" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">23</text>
       <circle cx="555" cy="452" r="13" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
       <polygon points="543,466 567,466 562,460 548,460" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
-      <text x="547" y="456" fill="{fg_txt}" font-size="11" font-weight="bold">17</text>
-      <text x="528" y="482" fill="{fg_txt}" font-size="11" font-weight="bold">BOMBA 3</text>
+      <text x="547" y="456" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">17</text>
+      <text x="528" y="482" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BOMBA 3</text>
 
       <polyline points="542,452 452,452 452,508" fill="none" stroke="{line_main}" stroke-width="2.2" marker-end="url(#arr)"/>
-      <text x="455" y="445" fill="{line_main}" font-size="11" font-weight="bold">24 ({res['s22_cola_scv1']:.1f} kg/h)</text>
+      <text x="455" y="445" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">24 ({res['s22_cola_scv1']:.1f} kg/h)</text>
 
       <g opacity="{op_c2}">
         <polygon points="440,512 480,512 480,550 460,570 440,550" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="452" y="542" fill="{fg_txt}" font-size="12" font-weight="bold">18</text>
-        <text x="486" y="538" fill="{fg_txt}" font-size="11" font-weight="bold">ACON. 3 (pH {ph_c2:.1f})</text>
+        <text x="452" y="542" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">18</text>
+        <text x="486" y="538" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACON. 3 (pH {ph_c2:.1f})</text>
 
         <polyline points="460,570 460,582 520,582 520,596" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="485" y="578" fill="{line_main}" font-size="11" font-weight="bold">25</text>
+        <text x="485" y="578" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">25</text>
         <polygon points="500,600 540,600 540,636 520,656 500,636" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="512" y="628" fill="{fg_txt}" font-size="12" font-weight="bold">19</text>
-        <text x="442" y="628" fill="{fg_txt}" font-size="11" font-weight="bold">ACON. 4</text>
+        <text x="512" y="628" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">19</text>
+        <text x="442" y="628" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACON. 4</text>
 
         <polyline points="520,656 520,668 585,668" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="542" y="663" fill="{line_main}" font-size="11" font-weight="bold">26</text>
+        <text x="542" y="663" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">26</text>
         <rect x="588" y="635" width="200" height="48" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
         <line x1="638" y1="635" x2="638" y2="683" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="688" y1="635" x2="688" y2="683" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="738" y1="635" x2="738" y2="683" stroke="{eq_stroke}" stroke-width="1.5"/>
         <polyline points="588,648 765,655 788,640" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="605" y="666" fill="{fg_txt}" font-size="12" font-weight="bold">20</text>
-        <text x="625" y="627" fill="{fg_txt}" font-size="11" font-weight="bold">BANC. CEL. RO. C2 (4 Celdas)</text>
+        <text x="605" y="666" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">20</text>
+        <text x="625" y="627" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BANC. CEL. RO. C2 (4 Celdas)</text>
 
         <polyline points="755,635 755,585 875,585" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="780" y="578" fill="{line_main}" font-size="11" font-weight="bold">27 ({res['s27_esp_ro2']:.1f} kg/h)</text>
+        <text x="780" y="578" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">27 ({res['s27_esp_ro2']:.1f} kg/h)</text>
         <rect x="878" y="568" width="96" height="46" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
         <line x1="926" y1="568" x2="926" y2="614" stroke="{eq_stroke}" stroke-width="1.5"/>
         <polyline points="878,580 955,586 974,572" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="892" y="598" fill="{fg_txt}" font-size="12" font-weight="bold">21</text>
-        <text x="878" y="630" fill="{fg_txt}" font-size="11" font-weight="bold">BAN. CEL. CL. 2</text>
+        <text x="892" y="598" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">21</text>
+        <text x="878" y="630" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BAN. CEL. CL. 2</text>
 
         <polyline points="945,568 945,525 775,525" fill="none" stroke="{line_conc}" stroke-width="2.5" marker-end="url(#arr-conc)"/>
         <circle cx="765" cy="525" r="7" fill="none" stroke="{line_conc}" stroke-width="2"/>
-        <text x="845" y="518" fill="{line_conc}" font-size="11" font-weight="bold">29</text>
-        <text x="665" y="546" fill="{line_conc}" font-size="12" font-weight="bold">CONC. FINAL C2 ({res['s29_c2']:.2f} kg/h | Ley {m2_sym}: {res['ley_c2_m2']:.1f}% | Rec: {res['rec_glob_c2']:.1f}%)</text>
+        <text x="845" y="518" fill="{line_conc}" font-size="11" font-weight="bold" class="lbl">29</text>
+        <text x="665" y="546" fill="{line_conc}" font-size="12" font-weight="bold" class="lbl">CONC. FINAL C2 ({res['s29_c2']:.2f} kg/h | Ley {m2_sym}: {res['ley_c2_m2']:.1f}% | Rec: {res['rec_glob_c2']:.1f}%)</text>
 
         <polyline points="788,662 998,662 998,718 935,718" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="885" y="656" fill="{line_main}" font-size="11" font-weight="bold">28</text>
+        <text x="885" y="656" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">28</text>
         <rect x="680" y="696" width="250" height="46" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
         <line x1="730" y1="696" x2="730" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="780" y1="696" x2="780" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="830" y1="696" x2="830" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
         <line x1="880" y1="696" x2="880" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
         <polyline points="930,708 705,714 680,700" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="905" y="726" fill="{fg_txt}" font-size="12" font-weight="bold">22</text>
-        <text x="710" y="691" fill="{fg_txt}" font-size="10" font-weight="bold">BANCO DE CELDAS SCV. C2 (5 Celdas)</text>
+        <text x="905" y="726" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">22</text>
+        <text x="710" y="691" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">BANCO DE CELDAS SCV. C2 (5 Celdas)</text>
 
         <polyline points="974,592 1062,592 1062,672" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="1068" y="635" fill="{line_rec}" font-size="11" font-weight="bold">30</text>
+        <text x="1068" y="635" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">30</text>
         <polyline points="710,742 710,752 1042,752 1042,672" fill="none" stroke="{line_rec}" stroke-width="1.8"/>
-        <text x="850" y="749" fill="{line_rec}" font-size="11" font-weight="bold">31</text>
+        <text x="850" y="749" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">31</text>
 
         <polygon points="1032,675 1072,675 1072,705 1052,722 1032,705" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="1044" y="698" fill="{fg_txt}" font-size="11" font-weight="bold">23</text>
-        <text x="952" y="698" fill="{fg_txt}" font-size="10" font-weight="bold">SUMIDERO 4</text>
+        <text x="1044" y="698" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">23</text>
+        <text x="952" y="698" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">SUMIDERO 4</text>
 
         <polyline points="1052,722 1052,735 1100,735" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="1072" y="730" fill="{line_rec}" font-size="10" font-weight="bold">32</text>
+        <text x="1072" y="730" fill="{line_rec}" font-size="10" font-weight="bold" class="lbl">32</text>
         <circle cx="1116" cy="735" r="12" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="1109" y="739" fill="{fg_txt}" font-size="10" font-weight="bold">24</text>
-        <text x="1095" y="718" fill="{fg_txt}" font-size="10" font-weight="bold">BOM. 4</text>
+        <text x="1109" y="739" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">24</text>
+        <text x="1095" y="718" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">BOM. 4</text>
 
         <g opacity="{op_rec}">
           <polyline points="1128,735 1155,735 1155,498 468,498 468,508" fill="none" stroke="{line_rec}" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-rec)"/>
-          <text x="795" y="493" fill="{line_rec}" font-size="11" font-weight="bold">33 (Medios C2: {res['s33_medios_c2']:.1f} kg/h)</text>
+          <text x="795" y="493" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">33 (Medios C2: {res['s33_medios_c2']:.1f} kg/h)</text>
         </g>
       </g>
 
       <g opacity="{op_rel}">
         <polyline points="680,718 425,718" fill="none" stroke="{line_rec}" stroke-width="2.5" marker-end="url(#arr-rec)"/>
         <circle cx="415" cy="718" r="7" fill="none" stroke="{line_rec}" stroke-width="2"/>
-        <text x="435" y="708" fill="{line_rec}" font-size="11.5" font-weight="bold">34 — RELAVE FINAL ({res['s34_relave']:.1f} kg/h)</text>
-        <text x="435" y="734" fill="{line_rec}" font-size="10.5" font-weight="bold">Leyes: {res['ley_rel_m1']:.2f}% {m1_sym} | {res['ley_rel_m2']:.2f}% {m2_sym} | Fe: {ley_f_fe:.1f}%</text>
+        <text x="435" y="708" fill="{line_rec}" font-size="11.5" font-weight="bold" class="lbl">34 — RELAVE FINAL ({res['s34_relave']:.1f} kg/h)</text>
+        <text x="435" y="734" fill="{line_rec}" font-size="10.5" font-weight="bold" class="lbl">Leyes: {res['ley_rel_m1']:.2f}% {m1_sym} | {res['ley_rel_m2']:.2f}% {m2_sym} | Fe: {ley_f_fe:.1f}%</text>
       </g>
 
       <!-- Leyenda Técnica de Corrientes (Esquina Inferior Izquierda) -->
       <rect x="20" y="585" width="245" height="72" rx="4" fill="{legend_bg}" stroke="{legend_stroke}" stroke-width="1.2"/>
-      <text x="30" y="602" fill="{fg_txt}" font-size="10" font-weight="bold">LEYENDA DE CORRIENTES</text>
+      <text x="30" y="602" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">LEYENDA DE CORRIENTES</text>
       <line x1="30" y1="615" x2="54" y2="615" stroke="{line_main}" stroke-width="2.2"/>
-      <text x="60" y="619" fill="{fg_txt}" font-size="9.5">Pulpa / Alimentación / Agua</text>
+      <text x="60" y="619" fill="{fg_txt}" font-size="9.5" class="lbl">Pulpa / Alimentación / Agua</text>
       <line x1="30" y1="630" x2="54" y2="630" stroke="{line_conc}" stroke-width="2.4"/>
-      <text x="60" y="634" fill="{fg_txt}" font-size="9.5">Concentrado Final (C1 / C2)</text>
+      <text x="60" y="634" fill="{fg_txt}" font-size="9.5" class="lbl">Concentrado Final (C1 / C2)</text>
       <line x1="30" y1="645" x2="54" y2="645" stroke="{line_rec}" stroke-width="2.2" stroke-dasharray="5,3"/>
-      <text x="60" y="649" fill="{fg_txt}" font-size="9.5">Relave Final / Recirculación</text>
+      <text x="60" y="649" fill="{fg_txt}" font-size="9.5" class="lbl">Relave Final / Recirculación</text>
 
       <!-- Cajetín Técnico UNMSM -->
       <rect x="20" y="665" width="245" height="78" rx="4" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.4"/>
-      <text x="30" y="683" fill="{fg_txt}" font-size="10.5" font-weight="bold">PLANTA PILOTO JICA — UNMSM</text>
-      <text x="30" y="699" fill="{fg_txt}" font-size="9.5">Ing. Metalúrgica | 24 Equipos / 34 Corr.</text>
-      <text x="30" y="715" fill="{fg_txt}" font-size="9.5">Esquema Activo: {m1_sym} / {m2_sym} | Fe: {ley_f_fe:.1f}%</text>
-      <text x="30" y="731" fill="{fg_txt}" font-size="8.5">Modelo de Simulación en Estado Estacionario</text>
+      <text x="30" y="683" fill="{fg_txt}" font-size="10.5" font-weight="bold" class="lbl">PLANTA PILOTO JICA — UNMSM</text>
+      <text x="30" y="699" fill="{fg_txt}" font-size="9.5" class="lbl">Ing. Metalúrgica | 24 Equipos / 34 Corr.</text>
+      <text x="30" y="715" fill="{fg_txt}" font-size="9.5" class="lbl">Esquema Activo: {m1_sym} / {m2_sym} | Fe: {ley_f_fe:.1f}%</text>
+      <text x="30" y="731" fill="{fg_txt}" font-size="8.5" class="lbl">Modelo de Simulación en Estado Estacionario</text>
     </svg>"""
 
-    svg_box = f'<div style="background:{bg_svg}; border:1px solid #CBD5E1; border-radius:6px; padding:6px; overflow:auto; max-height:690px;">{svg_only}</div>'
-    components.html(svg_box, height=700, scrolling=True)
+    svg_wrapper = f"""
+    <style>
+      .jica-svg-box {{
+        background:{bg_svg};
+        border:1px solid #CBD5E1;
+        border-radius:6px;
+        padding:6px;
+        {overflow_css}
+        scrollbar-width: thin;
+        scrollbar-color: #94A3B8 transparent;
+      }}
+      .jica-svg-box::-webkit-scrollbar {{
+        width: 6px;
+        height: 6px;
+      }}
+      .jica-svg-box::-webkit-scrollbar-track {{
+        background: transparent;
+      }}
+      .jica-svg-box::-webkit-scrollbar-thumb {{
+        background-color: #94A3B8;
+        border-radius: 999px;
+      }}
+    </style>
+    <div class="jica-svg-box">{svg_only}</div>
+    """
+    comp_height = 580 if zoom_pct == 100 else 685
+    components.html(svg_wrapper, height=comp_height, scrolling=False)
 
     st.download_button(
         label="Descargar Plano Flowsheet (.SVG)",
@@ -987,3 +1059,14 @@ with tab_34:
                 with open(archivo_full, "wb") as f:
                     f.write(buffer_excel.getvalue())
                 st.caption(f"Guardado en: {archivo_full}")
+
+# ==================== BARRA DE ESTADO TÉCNICA INFERIOR ====================
+ts_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+estado_masa = "Balance Convergente — Error < 0.01%" if res["error_masa_pct"] < 0.01 else f"Balance Convergente — Error {res['error_masa_pct']:.4f}%"
+st.markdown(f"""
+<div class="status-footer">
+  <span>Motor JICA Sim v3.2 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
+  <span>{estado_masa}</span>
+  <span>Última actualización: {ts_actual}</span>
+</div>
+""", unsafe_allow_html=True)
