@@ -15,6 +15,7 @@ st.set_page_config(
 
 # ==================== ESTADO INICIAL CENTRALIZADO ====================
 DEFAULTS = {
+    "p_preset": "Operación Nominal JICA",
     "p_modo": "Modo Guiado (Estudiantes)",
     "p_tema": "Plano CAD (Blanco Técnico)",
     "p_esquema": "Pb - Zn (Galena en C1 / Esfalerita en C2)",
@@ -45,9 +46,26 @@ DEFAULTS = {
     "base_updated_ts": "",
 }
 
+PARAM_KEYS = [
+    "p_modo", "p_tema", "p_esquema",
+    "p_F", "p_f80", "p_set_mand", "p_set_rod", "p_wi",
+    "p_sol_mol", "p_cc_esp", "p_sol_reb", "p_sg",
+    "p_ley_m1", "p_ley_m2", "p_ley_fe",
+    "p_ph_c1", "p_dep_c1", "p_col_c1",
+    "p_ph_c2", "p_act_c2", "p_col_c2",
+    "p_rec_ro1", "p_rec_cl1", "p_rec_scv1",
+    "p_rec_ro2", "p_rec_cl2", "p_rec_scv2",
+]
+
 for k_def, v_def in DEFAULTS.items():
     if k_def not in st.session_state:
         st.session_state[k_def] = v_def
+
+
+def restaurar_defecto():
+    for k_def, v_def in DEFAULTS.items():
+        if k_def != "base_updated_ts":
+            st.session_state[k_def] = v_def
 
 
 def on_esquema_change():
@@ -64,6 +82,37 @@ def on_esquema_change():
         st.session_state["p_ley_m1"] = 1.60
         st.session_state["p_ley_m2"] = 3.40
         st.session_state["p_ley_fe"] = 13.0
+
+
+def aplicar_preset():
+    preset = st.session_state["p_preset"]
+    if preset == "Operación Nominal JICA":
+        st.session_state["p_F"] = 325.0
+        st.session_state["p_f80"] = 105.0
+        st.session_state["p_set_mand"] = 26.0
+        st.session_state["p_set_rod"] = 6.5
+        st.session_state["p_wi"] = 13.8
+        st.session_state["p_sol_mol"] = 72.0
+        st.session_state["p_cc_esp"] = 210.0
+        st.session_state["p_sol_reb"] = 30.0
+        st.session_state["p_dep_c1"] = 250.0
+        st.session_state["p_col_c1"] = 35.0
+        st.session_state["p_act_c2"] = 350.0
+        st.session_state["p_col_c2"] = 45.0
+    elif preset == "Mineral Duro (Wi Alto)":
+        st.session_state["p_F"] = 325.0
+        st.session_state["p_f80"] = 120.0
+        st.session_state["p_wi"] = 19.5
+        st.session_state["p_sol_mol"] = 72.0
+        st.session_state["p_cc_esp"] = 210.0
+    elif preset == "Sobrecarga Molino / Espiral":
+        st.session_state["p_F"] = 520.0
+        st.session_state["p_sol_mol"] = 81.0
+        st.session_state["p_cc_esp"] = 285.0
+        st.session_state["p_sol_reb"] = 24.0
+    elif preset == "Baja Selectividad C1 (Poco Depresor)":
+        st.session_state["p_dep_c1"] = 50.0
+        st.session_state["p_col_c1"] = 75.0
 
 
 # Lectura de parámetros activos desde session_state
@@ -122,8 +171,8 @@ html, body, [class*="css"] {
 }
 
 .block-container {
-    padding-top: 0.9rem;
-    padding-bottom: 1.25rem;
+    padding-top: 0.85rem;
+    padding-bottom: 1.2rem;
     max-width: 99%;
 }
 
@@ -284,7 +333,7 @@ footer {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 10px;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     width: 100%;
     box-sizing: border-box;
 }
@@ -300,7 +349,7 @@ footer {
     border: 1px solid #E2E8F0;
     border-radius: 6px;
     padding: 9px 12px;
-    min-height: 110px;
+    min-height: 106px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -360,17 +409,6 @@ footer {
     margin-bottom: 8px;
 }
 
-.inspector-strip {
-    background-color: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-left: 3px solid #1E3A8A;
-    border-radius: 5px;
-    padding: 7px 12px;
-    margin-bottom: 8px;
-    font-size: 0.80rem;
-    color: #0F172A;
-}
-
 .ficha-card {
     background-color: #F8FAFC;
     border: 1px solid #CBD5E1;
@@ -421,7 +459,6 @@ footer {
     line-height: 1.42;
 }
 
-/* Mini-pestañas dentro del Editor del Flowsheet */
 button[data-baseweb="tab"] {
     font-weight: 600;
     font-size: 0.78rem;
@@ -707,7 +744,7 @@ st.markdown(f"""
 if es_modo_guiado:
     st.markdown("""
     <div class="pilot-note">
-      <strong>Escala Piloto JICA (UNMSM):</strong> Opera en cientos de <strong>kg/h</strong> (a diferencia de gran minería en miles de t/d) para aprender el circuito real sin riesgo. Edita los parámetros junto al plano y baja para ver las <strong>gráficas y balances en esta misma página</strong> sin cambiar de pestaña.
+      <strong>Escala Piloto JICA (UNMSM):</strong> Opera en cientos de <strong>kg/h</strong> (a diferencia de gran minería en miles de t/d) para aprender el circuito real sin riesgo. Edita los parámetros junto al plano y baja para ver las <strong>gráficas y balances en esta misma página</strong>.
     </div>
     """, unsafe_allow_html=True)
 
@@ -813,7 +850,7 @@ with st.expander("Tour / Guía por Etapas para Estudiantes (Clic para abrir qué
     if etapa_tour.startswith("Etapa 1"):
         st.markdown(f"""
         <div class="tour-card">
-          <strong>Objetivo de la Etapa 1 (Equipos 1 al 8):</strong> Entender cómo se reduce la roca hasta liberar los sulfuros.<br>
+          <strong>Objetivo de la Etapa 1 (Equipos 1 al 8):</strong> Entender cómo se reduce el tamaño de la roca hasta liberar los sulfuros.<br>
           <strong>Qué probar ahora:</strong> En el editor de la derecha del plano (<em>Molienda</em>), varía el <strong>% Sólidos Molino 2'x2'</strong> o la <strong>Carga Circulante Espiral (%)</strong> y mira cómo cambian el <strong>P80 [Corr. 10]</strong> (actual: <strong>{res['p80_reb_calc']:.1f} µm</strong>), el plano y la curva Rosin-Rammler más abajo.
         </div>
         """, unsafe_allow_html=True)
@@ -833,7 +870,7 @@ with st.expander("Tour / Guía por Etapas para Estudiantes (Clic para abrir qué
         """, unsafe_allow_html=True)
 
 st.markdown('<div class="toolbar-panel">', unsafe_allow_html=True)
-col_ctrl1, col_ctrl2, col_ctrl3, col_ctrl4 = st.columns([1.35, 1.35, 1.15, 1.15])
+col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([1.5, 1.5, 1.1])
 with col_ctrl1:
     busqueda = st.text_input("Buscar equipo o corriente", placeholder="Ej. 17, 29, Espiral, Bomba 3")
 with col_ctrl2:
@@ -848,22 +885,10 @@ with col_ctrl2:
         ]
     )
 with col_ctrl3:
-    zoom_pct = st.number_input("Escala del plano (%)", min_value=80, max_value=160, value=100, step=10)
-with col_ctrl4:
     corr_inspec = st.number_input("Inspeccionar corriente (1-34)", min_value=1, max_value=34, value=17, step=1)
 st.markdown('</div>', unsafe_allow_html=True)
 
 fila_corr = df_34[df_34["N° Corriente"] == corr_inspec].iloc[0]
-st.markdown(f"""
-<div class="inspector-strip">
-  <strong>Corriente [{int(fila_corr['N° Corriente'])}]:</strong> {fila_corr['Descripción en Plano JICA']} &nbsp;|&nbsp;
-  <strong>Sólidos:</strong> {fila_corr['Sólidos (kg/h)']:.2f} kg/h &nbsp;|&nbsp;
-  <strong>% Sólidos:</strong> {fila_corr['% Sólidos']:.1f}% &nbsp;|&nbsp;
-  <strong>Agua:</strong> {fila_corr['Agua (L/h)']:.1f} L/h &nbsp;|&nbsp;
-  <strong>Pulpa:</strong> {fila_corr['Pulpa Total (L/h)']:.1f} L/h &nbsp;|&nbsp;
-  <strong>P80:</strong> {fila_corr['P80 Estimado (µm)']:.0f} µm
-</div>
-""", unsafe_allow_html=True)
 
 if busqueda.strip():
     coincidencias = df_34[
@@ -996,7 +1021,7 @@ svg_only = f"""<svg id="jica-svg-plan" viewBox="0 0 1250 780" width="100%" heigh
 
   <polyline points="358,690 388,690 388,35 452,35 452,58" fill="none" stroke="{line_main}" stroke-width="2.2" marker-end="url(#arr)"/>
   <text x="394" y="295" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">12 ({res['s10_rebose']:.0f} kg/h)</text>
-  <text x="394" y="310" fill="{line_main}" font-size="10" class="lbl">P80: {res['p80_reb_calc']:.0f} µm</text>
+  <text x="394" y="310" fill="{fg_txt}" font-size="10" class="lbl">P80: {res['p80_reb_calc']:.0f} µm</text>
 
   <!-- CIRCUITO 1 (C1) -->
   <g opacity="{op_c1}">
@@ -1220,7 +1245,7 @@ sheet_html = f"""
     #jica-viewport {{
       position: relative;
       width: 100%;
-      height: 620px;
+      height: 640px;
       overflow: auto;
       background: {bg_svg};
       border: 1px solid #94A3B8;
@@ -1243,7 +1268,7 @@ sheet_html = f"""
       <div class="sheet-title">Hoja CAD — Planta Piloto JICA (UNMSM) | Arrastra para mover al hacer zoom</div>
       <div class="sheet-actions">
         <button type="button" class="btn-tool" id="btn-zoom-out">-</button>
-        <span class="zoom-readout" id="zoom-label">{zoom_pct}%</span>
+        <span class="zoom-readout" id="zoom-label">100%</span>
         <button type="button" class="btn-tool" id="btn-zoom-in">+</button>
         <button type="button" class="btn-tool" id="btn-zoom-reset">Ajustar</button>
         <button type="button" class="btn-tool btn-primary" id="btn-fullscreen">Pantalla completa</button>
@@ -1255,7 +1280,7 @@ sheet_html = f"""
   </div>
   <script>
     (function() {{
-      let scale = {zoom_pct} / 100.0;
+      let scale = 1.0;
       const minScale = 0.7;
       const maxScale = 2.2;
       const host = document.getElementById("jica-sheet-host");
@@ -1314,7 +1339,7 @@ sheet_html = f"""
 
 col_plano, col_panel = st.columns([2.9, 1.4])
 with col_plano:
-    components.html(sheet_html, height=690, scrolling=False)
+    components.html(sheet_html, height=710, scrolling=False)
     st.download_button(
         label="Descargar Plano Flowsheet (.SVG)",
         data=svg_only.encode("utf-8"),
@@ -1324,7 +1349,7 @@ with col_plano:
 
 # EDITOR DE EQUIPOS Y PARÁMETROS INTEGRADO AL COSTADO DEL FLOWSHEET
 with col_panel:
-    with st.container(height=690, border=True):
+    with st.container(height=710, border=True):
         st.markdown('<div class="panel-heading">Editor de Proceso en Vivo</div>', unsafe_allow_html=True)
 
         st.markdown(f"""
@@ -1405,6 +1430,17 @@ with col_panel:
 
         with ed_cfg:
             st.selectbox(
+                "Escenario Preconfigurado",
+                [
+                    "Operación Nominal JICA",
+                    "Mineral Duro (Wi Alto)",
+                    "Sobrecarga Molino / Espiral",
+                    "Baja Selectividad C1 (Poco Depresor)"
+                ],
+                key="p_preset",
+                on_change=aplicar_preset
+            )
+            st.selectbox(
                 "Esquema de Flotación Diferencial",
                 [
                     "Pb - Zn (Galena en C1 / Esfalerita en C2)",
@@ -1428,14 +1464,24 @@ with col_panel:
             )
 
         st.markdown("---")
-        if st.button(
-            "Fijar Estado Actual como Caso Base",
-            width="stretch",
-            help="Guarda el estado actual como referencia para ver deltas en los 5 KPIs."
-        ):
-            st.session_state["caso_base"] = res.copy()
-            st.session_state["base_updated_ts"] = datetime.now().strftime("%H:%M:%S")
-            st.rerun()
+        c_act1, c_act2 = st.columns(2)
+        with c_act1:
+            if st.button(
+                "Fijar Caso Base",
+                width="stretch",
+                help="Guarda el estado actual como referencia para ver deltas en los 5 KPIs."
+            ):
+                st.session_state["caso_base"] = res.copy()
+                st.session_state["base_updated_ts"] = datetime.now().strftime("%H:%M:%S")
+                st.rerun()
+        with c_act2:
+            st.button(
+                "Restaurar Defecto",
+                width="stretch",
+                on_click=restaurar_defecto,
+                help="Devuelve todos los parámetros a los valores iniciales de la Planta Piloto JICA."
+            )
+
         if st.session_state["base_updated_ts"]:
             st.caption(f"Caso base fijado a las {st.session_state['base_updated_ts']}.")
 
@@ -1666,7 +1712,7 @@ ts_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 estado_masa = "Balance Convergente — Error < 0.01%" if res["error_masa_pct"] < 0.01 else f"Balance Convergente — Error {res['error_masa_pct']:.4f}%"
 st.markdown(f"""
 <div class="status-footer">
-  <span>Motor JICA Sim v3.5 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
+  <span>Motor JICA Sim v3.6 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
   <span>{estado_masa}</span>
   <span>Última actualización: {ts_actual}</span>
 </div>
