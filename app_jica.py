@@ -13,6 +13,39 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ==================== SINCRONIZACIÓN SEGURA DE PARÁMETROS CLAVE ====================
+PARAM_DEFAULTS = {
+    "val_F": 325.0,
+    "val_sol_mol": 72.0,
+    "val_cc_esp": 210.0,
+    "val_sol_reb": 30.0,
+}
+
+for k_def, v_def in PARAM_DEFAULTS.items():
+    if k_def not in st.session_state:
+        st.session_state[k_def] = v_def
+
+WIDGET_GROUPS = {
+    "val_F": ("sb_F", "top_F", "pfd_F"),
+    "val_sol_mol": ("sb_sol_mol", "top_sol_mol", "pfd_sol_mol"),
+    "val_cc_esp": ("sb_cc_esp", "top_cc_esp", "pfd_cc_esp"),
+    "val_sol_reb": ("sb_sol_reb", "top_sol_reb"),
+}
+
+for master_k, widget_keys in WIDGET_GROUPS.items():
+    for wk in widget_keys:
+        if wk not in st.session_state:
+            st.session_state[wk] = st.session_state[master_k]
+
+
+def sync_param(master_key, source_key):
+    nuevo_valor = st.session_state[source_key]
+    st.session_state[master_key] = nuevo_valor
+    for wk in WIDGET_GROUPS[master_key]:
+        if wk != source_key:
+            st.session_state[wk] = nuevo_valor
+
+
 # ==================== ESTILOS INDUSTRIALES SOBRIOS (SCADA / SIMULACIÓN) ====================
 st.markdown("""
 <style>
@@ -25,15 +58,15 @@ html, body, [class*="css"] {
 }
 
 .block-container {
-    padding-top: 1.25rem;
+    padding-top: 1.8rem;
     padding-bottom: 1.25rem;
     max-width: 98%;
 }
 
-/* Ocultar botón Deploy, menú superior derecho y footer de Streamlit */
+/* Ocultar botón Deploy, menú superior derecho y footer SIN ocultar el control de reapertura de sidebar */
 [data-testid="stAppDeployButton"],
 #MainMenu,
-header[data-testid="stHeader"] {
+[data-testid="stMainMenu"] {
     visibility: hidden;
     display: none;
 }
@@ -43,10 +76,37 @@ footer {
     display: none;
 }
 
+/* ETAPA 1: Proteger siempre la barra lateral y el control nativo de reapertura en escritorio y móvil */
+header[data-testid="stHeader"] {
+    background-color: transparent !important;
+    height: 2.75rem;
+    pointer-events: none;
+}
+
+header[data-testid="stHeader"] button,
+[data-testid="collapsedControl"],
+[data-testid="stSidebarCollapsedControl"] {
+    visibility: visible !important;
+    display: flex !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    z-index: 999999 !important;
+}
+
+[data-testid="collapsedControl"] button,
+[data-testid="stSidebarCollapsedControl"] button {
+    background-color: #1E3A8A !important;
+    color: #FFFFFF !important;
+    border: 1px solid #172554 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22) !important;
+}
+
 /* Barra lateral sobria */
 [data-testid="stSidebar"] {
     background-color: #FFFFFF;
     border-right: 1px solid #E2E8F0;
+    visibility: visible !important;
 }
 
 [data-testid="stSidebar"] .stMarkdown h2,
@@ -62,12 +122,13 @@ footer {
     justify-content: space-between;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
     background-color: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-left: 4px solid #1E3A8A;
     border-radius: 6px;
     padding: 14px 18px;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 
 .header-title {
@@ -98,21 +159,110 @@ footer {
 }
 
 .badge-ok {
-    background-color: #EFF6FF;
-    color: #1E3A8A;
-    border: 1px solid #BFDBFE;
+    background-color: #DCFCE7;
+    color: #166534;
+    border: 1px solid #86EFAC;
 }
 
 .badge-warn {
-    background-color: #FFFBEB;
+    background-color: #FEF3C7;
     color: #92400E;
-    border: 1px solid #FDE68A;
+    border: 1px solid #FCD34D;
 }
 
 .badge-err {
-    background-color: #FEF2F2;
+    background-color: #FEE2E2;
     color: #991B1B;
+    border: 1px solid #FCA5A5;
+}
+
+/* Nota didáctica de escala piloto y ayudas en Modo Guiado */
+.pilot-note {
+    background-color: #EFF6FF;
+    border: 1px solid #BFDBFE;
+    border-left: 3px solid #1E3A8A;
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    font-size: 0.79rem;
+    color: #1E293B;
+    line-height: 1.4;
+}
+
+.guide-hint {
+    font-size: 0.73rem;
+    color: #475569;
+    background-color: #F8FAFC;
+    border-left: 2px solid #94A3B8;
+    padding: 4px 7px;
+    margin: -6px 0 8px 0;
+    line-height: 1.35;
+}
+
+/* Semáforos visuales (Verde / Ámbar / Rojo) en entradas y KPIs */
+.sem-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    border-radius: 4px;
+    padding: 4px 7px;
+    margin: -4px 0 8px 0;
+    font-size: 0.72rem;
+    line-height: 1.3;
+}
+
+.sem-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.sem-verde {
+    background-color: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    color: #166534;
+}
+
+.sem-verde .sem-dot { background-color: #16A34A; }
+
+.sem-ambar {
+    background-color: #FFFBEB;
+    border: 1px solid #FDE68A;
+    color: #92400E;
+}
+
+.sem-ambar .sem-dot { background-color: #D97706; }
+
+.sem-rojo {
+    background-color: #FEF2F2;
     border: 1px solid #FECACA;
+    color: #991B1B;
+}
+
+.sem-rojo .sem-dot { background-color: #DC2626; }
+
+.kpi-sem-pill {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+.pill-verde { background-color: #DCFCE7; color: #166534; border: 1px solid #86EFAC; }
+.pill-ambar { background-color: #FEF3C7; color: #92400E; border: 1px solid #FCD34D; }
+.pill-rojo  { background-color: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; }
+
+.kpi-sem-msg {
+    font-size: 0.69rem;
+    color: #475569;
+    margin-top: 3px;
+    line-height: 1.25;
 }
 
 /* Tarjetas KPI corporativas con simetría vertical */
@@ -136,7 +286,7 @@ footer {
     border: 1px solid #E2E8F0;
     border-radius: 6px;
     padding: 11px 14px;
-    min-height: 92px;
+    min-height: 124px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -196,7 +346,7 @@ footer {
     color: #7F1D1D;
 }
 
-/* Barra de herramientas del Flowsheet */
+/* Barra de herramientas del Flowsheet y Ficha integrada */
 .toolbar-panel {
     background-color: #F1F5F9;
     border: 1px solid #CBD5E1;
@@ -214,6 +364,45 @@ footer {
     margin-bottom: 10px;
     font-size: 0.82rem;
     color: #0F172A;
+}
+
+.ficha-card {
+    background-color: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-top: 3px solid #1E3A8A;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    font-size: 0.80rem;
+}
+
+.ficha-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: #1E3A8A;
+    margin-bottom: 6px;
+}
+
+.ficha-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px solid #F1F5F9;
+    font-size: 0.78rem;
+}
+
+.tour-card {
+    background-color: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-left: 4px solid #0F766E;
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    font-size: 0.81rem;
+    color: #0F172A;
+    line-height: 1.45;
 }
 
 /* Pestañas sobrias */
@@ -251,8 +440,93 @@ div[data-testid="stExpander"] {
 </style>
 """, unsafe_allow_html=True)
 
+
+# ==================== UTILIDAD SEMÁFORO OPERATIVO (ETAPA 3) ====================
+def evaluar_semaforo(param_id, valor):
+    if param_id == "alimento":
+        if 200.0 <= valor <= 450.0:
+            return ("verde", "EN RANGO PILOTO", "Flujo normal para operación continua en la Planta Piloto JICA.")
+        if 150.0 <= valor < 200.0 or 450.0 < valor <= 600.0:
+            return ("ambar", "PROMEDIO ALTO/BAJO", "Cerca de los extremos de capacidad; vigila el caudal de pulpa y el P80.")
+        return ("rojo", "FUERA DE RANGO", "Muy por encima o debajo de la capacidad nominal piloto; riesgo operativo.")
+
+    if param_id == "sol_molino":
+        if 65.0 <= valor <= 75.0:
+            return ("verde", "ÓPTIMO", "Densidad ideal de pulpa para molienda eficiente en molino 2'x2'.")
+        if 62.0 <= valor < 65.0 or 75.0 < valor <= 78.0:
+            return ("ambar", "CERCA DEL LÍMITE", "Pulpa algo diluida o espesa; monitorear viscosidad y descarga.")
+        return ("rojo", "FUERA DE LÍMITE SCADA", "Muy por encima o debajo del límite (62%-78%); riesgo de sobrecarga o baja eficiencia.")
+
+    if param_id == "cc_espiral":
+        if 150.0 <= valor <= 220.0:
+            return ("verde", "VALOR PROMEDIO", "Carga circulante en valor promedio; recircula arena al clasificador de forma estable.")
+        if 100.0 <= valor < 150.0 or 220.0 < valor <= 260.0:
+            return ("ambar", "ALTO / BAJO", "Recirculación alejada del punto medio; cambia la finura P80 y la carga del molino.")
+        return ("rojo", "MUY POR ENCIMA / BAJO", "Fuera de rango seguro (>260% o <100%); riesgo de sobrecarga en espiral o sobre-molienda.")
+
+    if param_id == "p80_rebose":
+        if 115.0 <= valor <= 155.0:
+            return ("verde", "ÓPTIMO", "Finura adecuada para liberación de sulfuros en flotación.")
+        if 95.0 <= valor < 115.0 or 155.0 < valor <= 175.0:
+            return ("ambar", "PROMEDIO ALTO/BAJO", "Granulometría algo gruesa o muy fina; afecta recuperación o lamas.")
+        return ("rojo", "FUERA DE RANGO", "P80 extremo; riesgo de mala liberación mineral o exceso de finos.")
+
+    if param_id == "rec_c1":
+        if valor >= 82.0:
+            return ("verde", "EN META", "Buena recuperación del mineral principal en Circuito 1.")
+        if valor >= 72.0:
+            return ("ambar", "MEDIA", "Recuperación moderada; revisar P80 o dosis de colector C1.")
+        return ("rojo", "BAJA", "Pérdida alta de metal valioso hacia el Circuito 2 y relave.")
+
+    if param_id == "rec_c2":
+        if valor >= 80.0:
+            return ("verde", "EN META", "Buena recuperación del segundo concentrado en Circuito 2.")
+        if valor >= 70.0:
+            return ("ambar", "MEDIA", "Recuperación moderada; revisar activador CuSO4 y pH de C2.")
+        return ("rojo", "BAJA", "Recuperación insuficiente; revisar acondicionamiento C2.")
+
+    if param_id == "ley_relave":
+        if valor <= 0.50:
+            return ("verde", "BAJA PÉRDIDA", "Cola con baja pérdida metálica; buen desempeño diferencial.")
+        if valor <= 0.90:
+            return ("ambar", "PÉRDIDA MEDIA", "Se escapa mineral valioso en el relave; revisar bancos Scavenger.")
+        return ("rojo", "PÉRDIDA ALTA", "Ley alta en relave final; ajustar molienda o reactivos.")
+
+    if param_id == "caudal_pulpa":
+        if valor <= 30.0:
+            return ("verde", "NORMAL", "Caudal volumétrico cómodo para bombas y celdas piloto.")
+        if valor <= 38.0:
+            return ("ambar", "CERCA DEL LÍMITE", "Caudal alto; cerca del límite nominal de 38 L/min.")
+        return ("rojo", "ALARMA CAUDAL", "Supera los 38 L/min nominales; riesgo de rebose en celdas/sumideros.")
+
+    return ("verde", "NORMAL", "Parámetro en rango operativo.")
+
+
+def render_semaforo(param_id, valor):
+    nivel, etiqueta, mensaje = evaluar_semaforo(param_id, valor)
+    st.markdown(
+        f'<div class="sem-box sem-{nivel}"><span class="sem-dot"></span>'
+        f'<div><strong>{etiqueta}:</strong> {mensaje}</div></div>',
+        unsafe_allow_html=True
+    )
+
+
+def render_guide_hint(texto, activo):
+    if activo:
+        st.markdown(f'<div class="guide-hint">{texto}</div>', unsafe_allow_html=True)
+
+
 # ==================== PANEL LATERAL: ENTRADAS OPERATIVAS Y QUÍMICAS ====================
 st.sidebar.markdown("## Control de Proceso JICA")
+
+modo_interfaz = st.sidebar.radio(
+    "Modo de Interfaz",
+    ["Modo Guiado (Estudiantes)", "Modo Técnico (Compacto)"],
+    index=0,
+    horizontal=True,
+    help="Modo Guiado muestra explicaciones de qué hace cada variable y qué ocurre si sube o baja."
+)
+es_modo_guiado = modo_interfaz.startswith("Modo Guiado")
 
 tema_plano = st.sidebar.radio(
     "Estilo del Diagrama",
@@ -281,26 +555,145 @@ else:
     d_m1_f, d_m2_f, d_fe_f = 1.60, 3.40, 13.0
 
 with st.sidebar.expander("1. Chancado y Molienda", expanded=True):
-    F_kgh = st.number_input("Alimento Fresco (kg/h)", min_value=100.0, max_value=800.0, value=325.0, step=25.0, help="Corriente 1 — Alimentación fresca a Chancadora de Mandíbulas [Equipo 1]")
-    f80_alim_mm = st.number_input("F80 Alimento Fresco (mm)", min_value=25.0, max_value=127.0, value=105.0, step=5.0, help="Tamaño característico F80 del mineral fresco [Corriente 1]")
-    set_mandibulas_mm = st.number_input("Set Chanc. Mandíbulas (mm)", min_value=12.0, max_value=38.0, value=26.0, step=1.0, help="CSS — Closed Side Setting de Chancadora de Mandíbulas [Equipo 1]")
-    set_rodillos_mm = st.number_input("Set Chanc. Rodillos (mm)", min_value=3.0, max_value=15.0, value=6.5, step=0.5, help="Abertura entre rodillos de chancadora secundaria [Equipo 2]")
-    wi_bond = st.number_input("Work Index Bond Wi (kWh/t)", min_value=8.0, max_value=25.0, value=13.8, step=0.2, help="Índice de trabajo de Bond para cálculo energético en molienda [Equipo 5]")
-    sol_molino = st.number_input("% Sólidos Molino 2'x2'", min_value=55.0, max_value=84.0, value=72.0, step=1.0, help="Porcentaje de sólidos en peso en la alimentación al Molino de Bolas 2'x2' [Equipo 5 / Corriente 5]")
-    cc_espiral_pct = st.number_input("Carga Circulante Espiral (%)", min_value=80.0, max_value=320.0, value=210.0, step=10.0, help="Relación de arenas recirculadas [Corriente 9] respecto al alimento fresco en Clasificador Helicoidal [Equipo 6]")
-    sol_rebose = st.number_input("% Sólidos Rebose", min_value=20.0, max_value=45.0, value=30.0, step=1.0, help="Porcentaje de sólidos en peso en el rebose del clasificador [Corrientes 10 / 12]")
-    sg_mineral = st.number_input("Gravedad Específica Mineral (SG)", min_value=2.5, max_value=4.5, value=2.95, step=0.05, help="Densidad relativa de sólidos (t/m³) para conversión de flujos másicos a volumétricos")
+    st.number_input(
+        "Cantidad de Mineral / Alimento Fresco (kg/h)",
+        min_value=100.0, max_value=800.0, step=25.0,
+        key="sb_F", on_change=sync_param, args=("val_F", "sb_F"),
+        help="Corriente 1 — Alimentación fresca a Chancadora de Mandíbulas [Equipo 1]"
+    )
+    render_semaforo("alimento", st.session_state["val_F"])
+    render_guide_hint(
+        "Sube o baja cuánto mineral entra por hora; si aumenta, suben los flujos en kg/h y cambia el caudal de pulpa.",
+        es_modo_guiado
+    )
+
+    f80_alim_mm = st.number_input(
+        "F80 Alimento Fresco (mm)",
+        min_value=25.0, max_value=127.0, value=105.0, step=5.0,
+        help="Tamaño característico F80 del mineral fresco [Corriente 1]"
+    )
+    render_guide_hint(
+        "Tamaño de la roca antes de chancar; a mayor F80, más reducción deben realizar las chancadoras.",
+        es_modo_guiado
+    )
+
+    set_mandibulas_mm = st.number_input(
+        "Set Chanc. Mandíbulas (mm)",
+        min_value=12.0, max_value=38.0, value=26.0, step=1.0,
+        help="CSS — Closed Side Setting de Chancadora de Mandíbulas [Equipo 1]"
+    )
+    set_rodillos_mm = st.number_input(
+        "Set Chanc. Rodillos (mm)",
+        min_value=3.0, max_value=15.0, value=6.5, step=0.5,
+        help="Abertura entre rodillos de chancadora secundaria [Equipo 2]"
+    )
+    render_guide_hint(
+        "Abertura de descarga de chancadoras; si la cierras (bajas mm), el mineral entra más fino al molino.",
+        es_modo_guiado
+    )
+
+    wi_bond = st.number_input(
+        "Work Index Bond Wi (kWh/t)",
+        min_value=8.0, max_value=25.0, value=13.8, step=0.2,
+        help="Índice de trabajo de Bond para cálculo energético en molienda [Equipo 5]"
+    )
+    render_guide_hint(
+        "Dureza del mineral; si sube, el molino requiere más energía (kW) y el P80 tiende a salir más grueso.",
+        es_modo_guiado
+    )
+
+    st.number_input(
+        "% Sólidos Molino 2'x2'",
+        min_value=55.0, max_value=84.0, step=1.0,
+        key="sb_sol_mol", on_change=sync_param, args=("val_sol_mol", "sb_sol_mol"),
+        help="Porcentaje de sólidos en peso en la alimentación al Molino de Bolas 2'x2' [Equipo 5 / Corriente 5]"
+    )
+    render_semaforo("sol_molino", st.session_state["val_sol_mol"])
+    render_guide_hint(
+        "Qué tan espesa es la pulpa en el molino; si sube sobre 78% hay riesgo de atoramiento, si baja de 62% pierde eficiencia.",
+        es_modo_guiado
+    )
+
+    st.number_input(
+        "Carga Circulante Espiral (%)",
+        min_value=80.0, max_value=320.0, step=10.0,
+        key="sb_cc_esp", on_change=sync_param, args=("val_cc_esp", "sb_cc_esp"),
+        help="Relación de arenas recirculadas [Corriente 9] respecto al alimento fresco en Clasificador Helicoidal [Equipo 6]"
+    )
+    render_semaforo("cc_espiral", st.session_state["val_cc_esp"])
+    render_guide_hint(
+        "Porcentaje de arenas gruesas que vuelven al molino; si sube, mejora la finura (baja P80) pero aumenta la carga al molino.",
+        es_modo_guiado
+    )
+
+    st.number_input(
+        "% Sólidos Rebose",
+        min_value=20.0, max_value=45.0, step=1.0,
+        key="sb_sol_reb", on_change=sync_param, args=("val_sol_reb", "sb_sol_reb"),
+        help="Porcentaje de sólidos en peso en el rebose del clasificador [Corrientes 10 / 12]"
+    )
+    render_guide_hint(
+        "Concentración de sólidos que va a flotación; si baja, entra más agua de dilución y sube el caudal en L/min.",
+        es_modo_guiado
+    )
+
+    sg_mineral = st.number_input(
+        "Gravedad Específica Mineral (SG)",
+        min_value=2.5, max_value=4.5, value=2.95, step=0.05,
+        help="Densidad relativa de sólidos (t/m³) para conversión de flujos másicos a volumétricos"
+    )
 
 with st.sidebar.expander(f"2. Leyes de Cabeza ({m1_sym}, {m2_sym}, Fe) y Reactivos", expanded=False):
-    ley_f_m1 = st.number_input(f"Ley Cabeza {m1_sym} (%)", min_value=0.2, max_value=20.0, value=d_m1_f, step=0.1, help=f"Ley inicial de {m1_sym} en el alimento fresco [Corriente 1]")
-    ley_f_m2 = st.number_input(f"Ley Cabeza {m2_sym} (%)", min_value=0.5, max_value=25.0, value=d_m2_f, step=0.1, help=f"Ley inicial de {m2_sym} en el alimento fresco [Corriente 1]")
-    ley_f_fe = st.number_input("Ley Cabeza Fe / Pirita (%)", min_value=1.0, max_value=45.0, value=d_fe_f, step=0.5, help="Contenido de hierro / sulfuros de hierro en cabeza [Corriente 1]")
-    ph_c1 = st.number_input("pH Acondicionamiento C1", min_value=6.5, max_value=11.5, value=8.5, step=0.1, help="pH de pulpa en Acondicionadores 1 y 2 [Equipos 9 y 10]")
-    dosis_dep_c1 = st.number_input("Depresor ZnSO4 Acond. 1 (g/t)", min_value=0.0, max_value=800.0, value=250.0, step=25.0, help="Dosificación de sulfato de zinc en Acondicionador 1 [Equipo 9]")
-    dosis_col_c1 = st.number_input("Colector Z-11 Acond. 2 (g/t)", min_value=5.0, max_value=150.0, value=35.0, step=5.0, help="Dosificación de xantato colector en Acondicionador 2 [Equipo 10]")
-    ph_c2 = st.number_input("pH Acondicionamiento C2", min_value=8.0, max_value=12.5, value=10.8, step=0.1, help="pH alcalino en Acondicionadores 3 y 4 del Circuito 2 [Equipos 18 y 19]")
-    dosis_act_c2 = st.number_input("Activador CuSO4 Acond. 3 (g/t)", min_value=50.0, max_value=1000.0, value=350.0, step=25.0, help="Dosificación de sulfato de cobre como activador en Acondicionador 3 [Equipo 18]")
-    dosis_col_c2 = st.number_input("Colector Z-6 Acond. 4 (g/t)", min_value=5.0, max_value=150.0, value=45.0, step=5.0, help="Dosificación de colector en Acondicionador 4 [Equipo 19]")
+    ley_f_m1 = st.number_input(
+        f"Ley Cabeza {m1_sym} (%)", min_value=0.2, max_value=20.0, value=d_m1_f, step=0.1,
+        help=f"Ley inicial de {m1_sym} en el alimento fresco [Corriente 1]"
+    )
+    ley_f_m2 = st.number_input(
+        f"Ley Cabeza {m2_sym} (%)", min_value=0.5, max_value=25.0, value=d_m2_f, step=0.1,
+        help=f"Ley inicial de {m2_sym} en el alimento fresco [Corriente 1]"
+    )
+    ley_f_fe = st.number_input(
+        "Ley Cabeza Fe / Pirita (%)", min_value=1.0, max_value=45.0, value=d_fe_f, step=0.5,
+        help="Contenido de hierro / sulfuros de hierro en cabeza [Corriente 1]"
+    )
+    render_guide_hint(
+        "Leyes iniciales del mineral que entra a planta; si suben, aumenta la masa de concentrado recuperable.",
+        es_modo_guiado
+    )
+
+    ph_c1 = st.number_input(
+        "pH Acondicionamiento C1", min_value=6.5, max_value=11.5, value=8.5, step=0.1,
+        help="pH de pulpa en Acondicionadores 1 y 2 [Equipos 9 y 10]"
+    )
+    dosis_dep_c1 = st.number_input(
+        "Depresor ZnSO4 Acond. 1 (g/t)", min_value=0.0, max_value=800.0, value=250.0, step=25.0,
+        help="Dosificación de sulfato de zinc en Acondicionador 1 [Equipo 9]"
+    )
+    dosis_col_c1 = st.number_input(
+        "Colector Z-11 Acond. 2 (g/t)", min_value=5.0, max_value=150.0, value=35.0, step=5.0,
+        help="Dosificación de xantato colector en Acondicionador 2 [Equipo 10]"
+    )
+    render_guide_hint(
+        "En C1 el depresor ayuda a mantener limpio el concentrado (sube ley) y el colector impulsa la recuperación.",
+        es_modo_guiado
+    )
+
+    ph_c2 = st.number_input(
+        "pH Acondicionamiento C2", min_value=8.0, max_value=12.5, value=10.8, step=0.1,
+        help="pH alcalino en Acondicionadores 3 y 4 del Circuito 2 [Equipos 18 y 19]"
+    )
+    dosis_act_c2 = st.number_input(
+        "Activador CuSO4 Acond. 3 (g/t)", min_value=50.0, max_value=1000.0, value=350.0, step=25.0,
+        help="Dosificación de sulfato de cobre como activador en Acondicionador 3 [Equipo 18]"
+    )
+    dosis_col_c2 = st.number_input(
+        "Colector Z-6 Acond. 4 (g/t)", min_value=5.0, max_value=150.0, value=45.0, step=5.0,
+        help="Dosificación de colector en Acondicionador 4 [Equipo 19]"
+    )
+    render_guide_hint(
+        "En C2 el activador (CuSO4) y el pH alcalino reactivan el segundo mineral para flotarlo sin arrastrar pirita.",
+        es_modo_guiado
+    )
 
 with st.sidebar.expander("3. Selectividad de Bancos", expanded=False):
     rec_ro1 = st.number_input("Rec. Rougher C1 (%)", min_value=55.0, max_value=95.0, value=82.0, step=1.0, help="Recuperación de etapa en Banco Rougher Circuito 1 [Equipo 11]")
@@ -309,8 +702,19 @@ with st.sidebar.expander("3. Selectividad de Bancos", expanded=False):
     rec_ro2 = st.number_input("Rec. Rougher C2 (%)", min_value=55.0, max_value=95.0, value=80.0, step=1.0, help="Recuperación de etapa en Banco Rougher Circuito 2 [Equipo 20]")
     rec_cl2 = st.number_input("Rec. Cleaner 2 (%)", min_value=60.0, max_value=98.0, value=86.0, step=1.0, help="Recuperación de etapa en Banco Cleaner 2 [Equipo 21]")
     rec_scv2 = st.number_input("Rec. Scavenger C2 (%)", min_value=25.0, max_value=85.0, value=50.0, step=1.0, help="Recuperación de etapa en Banco Scavenger Circuito 2 [Equipo 22]")
+    render_guide_hint(
+        "Controlan cuánto se recupera y recircula en cada banco de celdas (Rougher = desbaste, Cleaner = limpieza, Scavenger = barrido).",
+        es_modo_guiado
+    )
 
-# ==================== MOTOR METALÚRGICO (RESULTADOS CALCULADOS) ====================
+# Lectura unificada de parámetros sincronizados
+F_kgh = st.session_state["val_F"]
+sol_molino = st.session_state["val_sol_mol"]
+cc_espiral_pct = st.session_state["val_cc_esp"]
+sol_rebose = st.session_state["val_sol_reb"]
+
+
+# ==================== MOTOR METALÚRGICO (RESULTADOS CALCULADOS — INTACTO) ====================
 def simular_planta(
     F_val, f80_val, css_mand, gap_rod, wi_val, sol_mol, cc_pct, sol_reb, sg_val,
     f_m1, f_m2, f_fe, ph1, dep1, col1, ph2, act2, col2,
@@ -415,6 +819,7 @@ def simular_planta(
         "error_masa_pct": error_masa_pct
     }
 
+
 res = simular_planta(
     F_kgh, f80_alim_mm, set_mandibulas_mm, set_rodillos_mm, wi_bond,
     sol_molino, cc_espiral_pct, sol_rebose, sg_mineral,
@@ -428,11 +833,21 @@ if "caso_base" not in st.session_state:
     st.session_state["caso_base"] = res.copy()
 
 st.sidebar.markdown("---")
-if st.sidebar.button("Fijar Estado Actual como Caso Base", width="stretch"):
+if st.sidebar.button(
+    "Fijar Estado Actual como Caso Base",
+    width="stretch",
+    help="Guarda una foto de los resultados actuales como referencia para comparar cambios posteriores."
+):
     st.session_state["caso_base"] = res.copy()
     st.sidebar.caption("Caso base actualizado.")
 
+render_guide_hint(
+    "Guarda el escenario actual como punto de referencia para ver si tus cambios mejoran o empeoran los KPIs.",
+    es_modo_guiado
+)
+
 base = st.session_state["caso_base"]
+
 
 def delta_str(actual, ref, sufijo=""):
     diff = actual - ref
@@ -441,18 +856,24 @@ def delta_str(actual, ref, sufijo=""):
     signo = "+" if diff > 0 else ""
     return f"{signo}{diff:.2f}{sufijo} vs. base"
 
+
 # ==================== ALERTAS OPERATIVAS SCADA ====================
 alertas = []
 if sol_molino > 78.0:
-    alertas.append(("err", f"Límite excedido [Eq. 5]: % Sólidos en Molino 2'x2' ({sol_molino:.1f}%) > 78.0% máximo operativo."))
+    alertas.append(("err", f"Límite excedido [Eq. 5]: % Sólidos en Molino 2'x2' ({sol_molino:.1f}%) > 78.0% máximo operativo (riesgo de sobrecarga/atoramiento)."))
 elif sol_molino < 62.0:
-    alertas.append(("warn", f"Fuera de rango [Eq. 5]: % Sólidos en Molino 2'x2' ({sol_molino:.1f}%) < 62.0% mínimo operativo."))
+    alertas.append(("warn", f"Fuera de rango [Eq. 5]: % Sólidos en Molino 2'x2' ({sol_molino:.1f}%) < 62.0% mínimo operativo (pulpa muy diluida)."))
 
 if res["pulpa_rebose_lmin"] > 38.0:
-    alertas.append(("err", f"Límite excedido [Corr. 10/12]: Caudal de pulpa ({res['pulpa_rebose_lmin']:.1f} L/min) > 38.0 L/min nominal."))
+    alertas.append(("err", f"Límite excedido [Corr. 10/12]: Caudal de pulpa ({res['pulpa_rebose_lmin']:.1f} L/min) > 38.0 L/min nominal de celdas piloto."))
 
 if cc_espiral_pct > 260.0:
-    alertas.append(("warn", f"Carga elevada [Eq. 6]: Carga circulante en clasificador helicoidal ({cc_espiral_pct:.0f}%) > 260%."))
+    alertas.append(("warn", f"Carga elevada [Eq. 6]: Carga circulante en clasificador helicoidal ({cc_espiral_pct:.0f}%) > 260% recomendado."))
+elif cc_espiral_pct < 100.0:
+    alertas.append(("warn", f"Carga baja [Eq. 6]: Carga circulante ({cc_espiral_pct:.0f}%) < 100%; posible baja eficiencia de clasificación."))
+
+if F_kgh > 600.0 or F_kgh < 150.0:
+    alertas.append(("warn", f"Escala piloto [Corr. 1]: Alimento fresco ({F_kgh:.0f} kg/h) alejado del rango habitual de la Planta Piloto JICA (200–450 kg/h)."))
 
 tiene_error = any(a[0] == "err" for a in alertas)
 tiene_warn = any(a[0] == "warn" for a in alertas)
@@ -464,7 +885,7 @@ elif tiene_warn:
 else:
     badge_html = '<span class="scada-badge badge-ok">SCADA: NORMAL</span>'
 
-# ==================== CABECERA CORPORATIVA ====================
+# ==================== CABECERA CORPORATIVA + RESPALDO SIDEBAR (ETAPA 1) ====================
 st.markdown(f"""
 <div class="header-bar">
   <div>
@@ -475,18 +896,88 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# ==================== TARJETAS KPI SUPERIORES SIMÉTRICAS ====================
-kpis = [
-    ("P80 Rebose [Corr. 10]", f"{res['p80_reb_calc']:.1f} µm", delta_str(res["p80_reb_calc"], base["p80_reb_calc"], " µm")),
-    (f"Conc. C1 ({m1_sym}) [Corr. 17]", f"{res['s17_c1']:.2f} kg/h", f"Ley {res['ley_c1_m1']:.1f}% | {delta_str(res['rec_glob_c1'], base['rec_glob_c1'], '% Rec')}"),
-    (f"Conc. C2 ({m2_sym}) [Corr. 29]", f"{res['s29_c2']:.2f} kg/h", f"Ley {res['ley_c2_m2']:.1f}% | {delta_str(res['rec_glob_c2'], base['rec_glob_c2'], '% Rec')}"),
-    ("Relave Final [Corr. 34]", f"{res['s34_relave']:.2f} kg/h", f"{res['ley_rel_m1']:.2f}% {m1_sym} | {res['ley_rel_m2']:.2f}% {m2_sym}"),
-    ("Caudal Rebose [Corr. 12]", f"{res['pulpa_rebose_lmin']:.2f} L/min", delta_str(res["pot_molino_kw"], base["pot_molino_kw"], " kW")),
+col_rec1, col_rec2 = st.columns([1.15, 3.85])
+with col_rec1:
+    if st.button(
+        "Mostrar / Reabrir Panel de Datos",
+        width="stretch",
+        help="Reabre la barra lateral izquierda si fue ocultada en escritorio o celular."
+    ):
+        components.html("""
+        <script>
+        (function() {
+            const doc = window.parent.document;
+            const selectors = [
+                '[data-testid="collapsedControl"] button',
+                '[data-testid="stSidebarCollapsedControl"] button',
+                'button[data-testid="stBaseButton-headerNoPadding"]',
+                'button[aria-label*="Expand"]',
+                'button[aria-label*="Open sidebar"]'
+            ];
+            for (const sel of selectors) {
+                const btn = doc.querySelector(sel);
+                if (btn) { btn.click(); break; }
+            }
+        })();
+        </script>
+        """, height=0)
+
+with col_rec2:
+    with st.expander("Ajustes Rápidos (Respaldo directo si ocultaste la barra lateral)", expanded=False):
+        r1, r2, r3, r4 = st.columns(4)
+        with r1:
+            st.number_input(
+                "Alimento Fresco (kg/h)", min_value=100.0, max_value=800.0, step=25.0,
+                key="top_F", on_change=sync_param, args=("val_F", "top_F")
+            )
+            render_semaforo("alimento", st.session_state["val_F"])
+        with r2:
+            st.number_input(
+                "% Sólidos Molino 2'x2'", min_value=55.0, max_value=84.0, step=1.0,
+                key="top_sol_mol", on_change=sync_param, args=("val_sol_mol", "top_sol_mol")
+            )
+            render_semaforo("sol_molino", st.session_state["val_sol_mol"])
+        with r3:
+            st.number_input(
+                "Carga Circulante (%)", min_value=80.0, max_value=320.0, step=10.0,
+                key="top_cc_esp", on_change=sync_param, args=("val_cc_esp", "top_cc_esp")
+            )
+            render_semaforo("cc_espiral", st.session_state["val_cc_esp"])
+        with r4:
+            st.number_input(
+                "% Sólidos Rebose", min_value=20.0, max_value=45.0, step=1.0,
+                key="top_sol_reb", on_change=sync_param, args=("val_sol_reb", "top_sol_reb")
+            )
+            st.caption("Sincronizado con el panel lateral.")
+
+# ETAPA 2: Nota contextual de escala piloto (UNMSM)
+if es_modo_guiado:
+    st.markdown("""
+    <div class="pilot-note">
+      <strong>Contexto Didáctico — Escala Piloto JICA (UNMSM):</strong> Esta planta opera a escala piloto (cientos de <strong>kg/h</strong>), mucho más pequeña que una concentradora de gran minería (que procesa decenas de miles de toneladas por día), pero reproduce exactamente el mismo circuito real de chancado, molienda en circuito cerrado y flotación diferencial para que puedas probar variables sin riesgo.
+    </div>
+    """, unsafe_allow_html=True)
+
+# ==================== TARJETAS KPI SUPERIORES CON SEMÁFORO (ETAPA 3) ====================
+kpi_specs = [
+    ("P80 Rebose [Corr. 10]", f"{res['p80_reb_calc']:.1f} µm", delta_str(res["p80_reb_calc"], base["p80_reb_calc"], " µm"), evaluar_semaforo("p80_rebose", res["p80_reb_calc"])),
+    (f"Conc. C1 ({m1_sym}) [Corr. 17]", f"{res['s17_c1']:.2f} kg/h", f"Ley {res['ley_c1_m1']:.1f}% | {delta_str(res['rec_glob_c1'], base['rec_glob_c1'], '% Rec')}", evaluar_semaforo("rec_c1", res["rec_glob_c1"])),
+    (f"Conc. C2 ({m2_sym}) [Corr. 29]", f"{res['s29_c2']:.2f} kg/h", f"Ley {res['ley_c2_m2']:.1f}% | {delta_str(res['rec_glob_c2'], base['rec_glob_c2'], '% Rec')}", evaluar_semaforo("rec_c2", res["rec_glob_c2"])),
+    ("Relave Final [Corr. 34]", f"{res['s34_relave']:.2f} kg/h", f"{res['ley_rel_m1']:.2f}% {m1_sym} | {res['ley_rel_m2']:.2f}% {m2_sym}", evaluar_semaforo("ley_relave", res["ley_rel_m1"])),
+    ("Caudal Rebose [Corr. 12]", f"{res['pulpa_rebose_lmin']:.2f} L/min", delta_str(res["pot_molino_kw"], base["pot_molino_kw"], " kW"), evaluar_semaforo("caudal_pulpa", res["pulpa_rebose_lmin"])),
 ]
 
 kpi_cards_html = "".join([
-    f'<div class="kpi-card"><div class="kpi-top"><div class="kpi-label">{lbl}</div><div class="kpi-value">{val}</div></div><div class="kpi-delta">{dl}</div></div>'
-    for lbl, val, dl in kpis
+    f'<div class="kpi-card">'
+    f'  <div class="kpi-top">'
+    f'    <div class="kpi-label">{lbl}</div>'
+    f'    <div class="kpi-value">{val}</div>'
+    f'    <div><span class="kpi-sem-pill pill-{sem[0]}">{sem[1]}</span></div>'
+    f'    <div class="kpi-sem-msg">{sem[2]}</div>'
+    f'  </div>'
+    f'  <div class="kpi-delta">{dl}</div>'
+    f'</div>'
+    for lbl, val, dl, sem in kpi_specs
 ])
 st.markdown(f'<div class="kpi-grid">{kpi_cards_html}</div>', unsafe_allow_html=True)
 
@@ -494,7 +985,7 @@ for nivel, texto in alertas:
     cls = "alert-item-err" if nivel == "err" else "alert-item-warn"
     st.markdown(f'<div class="alert-item {cls}">{texto}</div>', unsafe_allow_html=True)
 
-# ==================== REGISTRO DE 34 CORRIENTES ====================
+# ==================== REGISTRO DE 34 CORRIENTES (INTACTO) ====================
 corrientes_data = [
     (1, "Alimento Fresco a Chanc. Mandíbulas [Eq. 1]", F_kgh, 100.0, 0.0, f80_alim_mm * 1000.0, ley_f_m1, ley_f_m2),
     (2, "Descarga Chanc. Mandíbulas a Rodillos [Eq. 2]", F_kgh, 100.0, 0.0, res["p80_mand_mm"] * 1000.0, ley_f_m1, ley_f_m2),
@@ -560,8 +1051,41 @@ tab_pfd, tab_et1, tab_sens, tab_34 = st.tabs([
     "Balance de 34 Corrientes y Exportación"
 ])
 
-# -------------------- PESTAÑA 1: FLOWSHEET CON TOOLBAR, ZOOM RESPONSIVO Y HALO EN TEXTOS --------------------
+# -------------------- PESTAÑA 1: FLOWSHEET + TOUR POR ETAPAS + FICHA RÁPIDA (ETAPA 4) --------------------
 with tab_pfd:
+    with st.expander("Tour / Guía por Etapas para Estudiantes (Qué probar paso a paso)", expanded=es_modo_guiado):
+        etapa_tour = st.radio(
+            "Selecciona la etapa del recorrido:",
+            [
+                "Etapa 1: Chancado, Molienda y Clasificación Helicoidal",
+                "Etapa 2: Flotación Diferencial C1 y C2 y Reactivos",
+                "Etapa 3: Comparativa con Caso Base y Balance"
+            ],
+            index=0,
+            horizontal=True
+        )
+        if etapa_tour.startswith("Etapa 1"):
+            st.markdown(f"""
+            <div class="tour-card">
+              <strong>Objetivo de la Etapa 1 (Equipos 1 al 8):</strong> Entender cómo se reduce el tamaño de la roca hasta liberar los sulfuros.<br>
+              <strong>Qué probar ahora:</strong> Modifica el <strong>% Sólidos Molino 2'x2'</strong> o la <strong>Carga Circulante Espiral (%)</strong> en la ficha derecha del plano. Observa cómo cambia el <strong>P80 de Rebose [Corr. 10]</strong> (actual: <strong>{res['p80_reb_calc']:.1f} µm</strong>), el retorno de arenas [Corr. 9] y el semáforo operativo.
+            </div>
+            """, unsafe_allow_html=True)
+        elif etapa_tour.startswith("Etapa 2"):
+            st.markdown(f"""
+            <div class="tour-card">
+              <strong>Objetivo de la Etapa 2 (Equipos 9 al 24):</strong> Ver cómo la química separa {m1_sym} en C1 y {m2_sym} en C2 enviando la ganga al Relave [Corr. 34].<br>
+              <strong>Qué probar ahora:</strong> Usa el selector <strong>Trazabilidad de ruta</strong> para resaltar C1 [Corr. 17] o C2 [Corr. 29], luego abre <em>2. Leyes de Cabeza y Reactivos</em> en el panel izquierdo y varía el depresor ZnSO4, el activador CuSO4 o el pH para ver su efecto en leyes y recuperaciones.
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="tour-card">
+              <strong>Objetivo de la Etapa 3 (Análisis de Escenarios):</strong> Evaluar mejoras de operación igual que un ingeniero metalurgista de planta.<br>
+              <strong>Qué probar ahora:</strong> Presiona <strong>Fijar Caso Base</strong> en la ficha derecha o en la barra lateral, luego sube el <strong>Alimento Fresco (kg/h)</strong> y compara los deltas en las 5 tarjetas KPI superiores, la pestaña <em>Sensibilidad y Comparativa</em> y el reporte Excel de 34 corrientes.
+            </div>
+            """, unsafe_allow_html=True)
+
     st.markdown('<div class="toolbar-panel">', unsafe_allow_html=True)
     col_ctrl1, col_ctrl2, col_ctrl3, col_ctrl4 = st.columns([1.35, 1.35, 1.15, 1.15])
     with col_ctrl1:
@@ -623,295 +1147,6 @@ with tab_pfd:
     op_c2 = "1.0" if "C2" in ruta_sel or "Todas" in ruta_sel else "0.18"
     op_rel = "1.0" if "Relave" in ruta_sel or "Todas" in ruta_sel else "0.18"
     op_rec = "1.0" if "Recirculaciones" in ruta_sel or "Todas" in ruta_sel else "0.22"
-
-    # Altura proporcional automática cuando zoom == 100%, o expandida con scroll delgado si zoom > 100%
-    svg_width_attr = "100%" if zoom_pct == 100 else f"{zoom_pct}%"
-    svg_height_attr = "auto" if zoom_pct == 100 else f"{int(640 * (zoom_pct / 100.0))}px"
-    overflow_css = "overflow: hidden;" if zoom_pct == 100 else "overflow: auto; max-height: 670px;"
-
-    svg_only = f"""<svg viewBox="0 0 1250 760" width="{svg_width_attr}" height="{svg_height_attr}" xmlns="http://www.w3.org/2000/svg" style="display:block; font-family: Inter, Arial, sans-serif; background:{bg_svg};">
-      <defs>
-        <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 1 L 10 5 L 0 9 z" fill="{line_main}"/>
-        </marker>
-        <marker id="arr-rec" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 1 L 10 5 L 0 9 z" fill="{line_rec}"/>
-        </marker>
-        <marker id="arr-conc" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 1 L 10 5 L 0 9 z" fill="{line_conc}"/>
-        </marker>
-        <style>
-          .lbl {{ paint-order: stroke; stroke: {halo_color}; stroke-width: 3.2px; stroke-linecap: round; stroke-linejoin: round; }}
-        </style>
-      </defs>
-
-      <!-- CONMINUCIÓN Y CLASIFICACIÓN (EQUIPOS 1 AL 8) -->
-      <circle cx="85" cy="25" r="7" fill="none" stroke="{line_main}" stroke-width="2"/>
-      <text x="100" y="29" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ALIMENTO ({F_kgh:.0f} kg/h)</text>
-      <line x1="85" y1="32" x2="85" y2="62" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="70" y="50" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">1</text>
-
-      <polygon points="65,65 80,65 80,115 70,115" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <polygon points="108,65 95,65 86,115 96,115" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <circle cx="106" cy="100" r="8" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="70" y="92" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">1</text>
-      <text x="122" y="82" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">CHANCADORA DE MANDÍBULAS</text>
-      <text x="122" y="96" fill="{fg_txt}" font-size="10" class="lbl">Set: {set_mandibulas_mm:.0f} mm | P80 calc: {res['p80_mand_mm']:.1f} mm</text>
-
-      <line x1="85" y1="117" x2="85" y2="152" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="70" y="138" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">2</text>
-
-      <polygon points="73,152 97,152 91,168 79,168" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
-      <circle cx="71" cy="180" r="14" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <circle cx="99" cy="180" r="14" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="81" y="164" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">2</text>
-      <text x="122" y="176" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">CHANCADORA DE RODILLOS</text>
-      <text x="122" y="190" fill="{fg_txt}" font-size="10" class="lbl">Luz: {set_rodillos_mm:.1f} mm | P80 calc: {res['p80_rod_mm']:.1f} mm</text>
-
-      <line x1="85" y1="196" x2="85" y2="232" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="70" y="217" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">3</text>
-
-      <polygon points="65,235 105,235 105,275 89,302 81,302 65,275" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="81" y="268" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">3</text>
-      <text x="115" y="262" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">TOLVA DE FINOS</text>
-      <text x="115" y="276" fill="{fg_txt}" font-size="10" class="lbl">{F_kgh:.0f} kg/h | F80: {res['f80_mol_um']:.0f} µm</text>
-
-      <line x1="85" y1="302" x2="85" y2="348" stroke="{line_main}" stroke-width="2"/>
-      <line x1="85" y1="348" x2="118" y2="348" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="68" y="330" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">4</text>
-      <circle cx="126" cy="348" r="8" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="122" y="334" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">4</text>
-
-      <!-- AGUA ENTRADA [6] separada de nodos y líneas -->
-      <circle cx="168" cy="292" r="5.5" fill="none" stroke="{line_main}" stroke-width="2"/>
-      <text x="179" y="295" fill="{line_main}" font-size="10" font-weight="bold" class="lbl">AGUA ENTRADA [6] ({res['w6_agua_ent']:.0f} L/h)</text>
-      <line x1="163" y1="297" x2="133" y2="339" stroke="{line_main}" stroke-width="1.8" marker-end="url(#arr)"/>
-
-      <line x1="134" y1="348" x2="178" y2="348" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="148" y="341" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">5</text>
-
-      <!-- MOLINO DE BOLAS 2'x2' [5] con etiquetas limpias -->
-      <polygon points="180,338 192,326 192,370 180,358" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <rect x="192" y="316" width="68" height="64" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <rect x="260" y="310" width="8" height="76" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <rect x="268" y="336" width="12" height="24" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="222" y="352" fill="{fg_txt}" font-size="13" font-weight="bold" class="lbl">5</text>
-      <text x="150" y="398" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">MOLINO DE BOLAS 2'x2'</text>
-      <text x="150" y="412" fill="{fg_txt}" font-size="10" class="lbl">Carga: {res['s5_alim_mol']:.0f} kg/h ({sol_molino:.0f}% Sól)</text>
-
-      <polyline points="280,348 293,348 293,505" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="278" y="425" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">7</text>
-
-      <!-- AGUA SALIDA [8] con holgura respecto a corriente 7 y 12 -->
-      <circle cx="352" cy="458" r="5.5" fill="none" stroke="{line_main}" stroke-width="2"/>
-      <text x="326" y="432" fill="{line_main}" font-size="9.5" font-weight="bold" class="lbl">AGUA SALIDA [8]</text>
-      <text x="332" y="444" fill="{line_main}" font-size="9" class="lbl">({res['w8_agua_sal']:.0f} L/h)</text>
-      <line x1="348" y1="464" x2="316" y2="510" stroke="{line_main}" stroke-width="1.8" marker-end="url(#arr)"/>
-
-      <polygon points="205,438 320,515 320,545 290,545 205,472" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <line x1="212" y1="455" x2="305" y2="528" stroke="{eq_stroke}" stroke-width="2" stroke-dasharray="6,4"/>
-      <text x="262" y="505" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">6</text>
-      <text x="148" y="534" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">CLASIFICADOR HELICOIDAL</text>
-      <text x="148" y="548" fill="{fg_txt}" font-size="10" class="lbl">CC: {cc_espiral_pct:.0f}% | P80 rebose: {res['p80_reb_calc']:.0f} µm</text>
-
-      <g opacity="{op_rec}">
-        <polyline points="205,455 126,455 126,358" fill="none" stroke="{line_rec}" stroke-width="2.2" stroke-dasharray="5,3" marker-end="url(#arr-rec)"/>
-        <text x="108" y="415" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">9 ({res['s9_arenas']:.0f})</text>
-      </g>
-
-      <polyline points="320,532 345,532 345,575" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="350" y="555" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">10</text>
-      <polygon points="327,578 363,578 363,615 345,638 327,615" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="341" y="608" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">7</text>
-      <text x="255" y="612" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">SUMIDERO 1</text>
-
-      <line x1="345" y1="638" x2="345" y2="675" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="350" y="660" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">11</text>
-      <circle cx="345" cy="690" r="13" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <polygon points="333,704 357,704 352,698 338,698" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
-      <text x="341" y="694" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">8</text>
-      <text x="282" y="695" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BOMBA 1</text>
-
-      <polyline points="358,690 388,690 388,35 452,35 452,58" fill="none" stroke="{line_main}" stroke-width="2.2" marker-end="url(#arr)"/>
-      <text x="394" y="295" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">12 ({res['s10_rebose']:.0f} kg/h)</text>
-      <text x="394" y="310" fill="{line_main}" font-size="10" class="lbl">P80: {res['p80_reb_calc']:.0f} µm</text>
-
-      <!-- CIRCUITO 1 (C1) -->
-      <g opacity="{op_c1}">
-        <polygon points="440,62 480,62 480,102 460,124 440,102" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="456" y="92" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">9</text>
-        <text x="488" y="85" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACOND. 1 (pH {ph_c1:.1f})</text>
-
-        <polyline points="460,124 460,140 520,140 520,158" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="482" y="135" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">13</text>
-        <polygon points="500,162 540,162 540,202 520,224 500,202" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="513" y="192" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">10</text>
-        <text x="435" y="192" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACOND. 2</text>
-
-        <polyline points="520,224 520,242 585,242" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="498" y="257" fill="{line_main}" font-size="10" font-weight="bold" class="lbl">14 ({res['s14_alim_ro1']:.0f} kg/h)</text>
-
-        <rect x="588" y="210" width="200" height="52" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <line x1="638" y1="210" x2="638" y2="262" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="688" y1="210" x2="688" y2="262" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="738" y1="210" x2="738" y2="262" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <polyline points="588,225 765,232 788,215" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="605" y="245" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">11</text>
-        <text x="625" y="202" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BANC. CEL. RO. C1 (4 Celdas)</text>
-
-        <polyline points="755,210 755,152 875,152" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="780" y="145" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">15 ({res['s15_esp_ro1']:.1f} kg/h)</text>
-        <rect x="878" y="135" width="96" height="48" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <line x1="926" y1="135" x2="926" y2="183" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <polyline points="878,148 955,154 974,140" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="892" y="168" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">12</text>
-        <text x="878" y="200" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BAN. CEL. CL. 1</text>
-
-        <polyline points="945,135 945,82 775,82" fill="none" stroke="{line_conc}" stroke-width="2.5" marker-end="url(#arr-conc)"/>
-        <circle cx="765" cy="82" r="7" fill="none" stroke="{line_conc}" stroke-width="2"/>
-        <text x="845" y="75" fill="{line_conc}" font-size="11" font-weight="bold" class="lbl">17</text>
-        <text x="665" y="104" fill="{line_conc}" font-size="12" font-weight="bold" class="lbl">CONC. FINAL C1 ({res['s17_c1']:.2f} kg/h | Ley {m1_sym}: {res['ley_c1_m1']:.1f}% | Rec: {res['rec_glob_c1']:.1f}%)</text>
-
-        <polyline points="788,242 998,242 998,338 935,338" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="860" y="236" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">16 ({res['s16_cola_ro1']:.1f} kg/h)</text>
-        <rect x="680" y="308" width="250" height="52" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <line x1="730" y1="308" x2="730" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="780" y1="308" x2="780" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="830" y1="308" x2="830" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="880" y1="308" x2="880" y2="360" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <polyline points="930,322 705,328 680,312" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="905" y="344" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">13</text>
-        <text x="695" y="298" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BANCO DE CELDAS SCV. CIRCUITO 1 (5 Celdas)</text>
-
-        <polyline points="974,162 1062,162 1062,395" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="1068" y="280" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">18</text>
-        <polyline points="710,360 710,382 1042,382 1042,395" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="850" y="377" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">19</text>
-
-        <polygon points="1032,398 1072,398 1072,435 1052,456 1032,435" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="1044" y="428" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">14</text>
-        <text x="948" y="428" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">SUMIDERO 2</text>
-
-        <polyline points="1052,456 1052,482 1085,482" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="1035" y="474" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">20</text>
-        <circle cx="1102" cy="482" r="13" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <polygon points="1090,496 1114,496 1109,490 1095,490" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="1095" y="486" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">15</text>
-        <text x="1080" y="462" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BOM. 2</text>
-
-        <g opacity="{op_rec}">
-          <polyline points="1115,482 1175,482 1175,18 468,18 468,58" fill="none" stroke="{line_rec}" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-rec)"/>
-          <text x="795" y="14" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">21 (Medios C1: {res['s21_medios_c1']:.1f} kg/h)</text>
-        </g>
-      </g>
-
-      <!-- TRANSFERENCIA C1 -> C2 Y CIRCUITO 2 (C2) -->
-      <polyline points="680,342 622,342 622,368" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="642" y="336" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">22</text>
-      <polygon points="602,372 642,372 642,408 622,428 602,408" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <text x="614" y="402" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">16</text>
-      <text x="518" y="398" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">SUMIDERO 3</text>
-
-      <polyline points="622,428 622,452 572,452" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-      <text x="595" y="446" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">23</text>
-      <circle cx="555" cy="452" r="13" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-      <polygon points="543,466 567,466 562,460 548,460" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.8"/>
-      <text x="547" y="456" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">17</text>
-      <text x="528" y="482" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BOMBA 3</text>
-
-      <polyline points="542,452 452,452 452,508" fill="none" stroke="{line_main}" stroke-width="2.2" marker-end="url(#arr)"/>
-      <text x="455" y="445" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">24 ({res['s22_cola_scv1']:.1f} kg/h)</text>
-
-      <g opacity="{op_c2}">
-        <polygon points="440,512 480,512 480,550 460,570 440,550" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="452" y="542" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">18</text>
-        <text x="486" y="538" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACON. 3 (pH {ph_c2:.1f})</text>
-
-        <polyline points="460,570 460,582 520,582 520,596" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="485" y="578" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">25</text>
-        <polygon points="500,600 540,600 540,636 520,656 500,636" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="512" y="628" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">19</text>
-        <text x="442" y="628" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">ACON. 4</text>
-
-        <polyline points="520,656 520,668 585,668" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="542" y="663" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">26</text>
-        <rect x="588" y="635" width="200" height="48" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <line x1="638" y1="635" x2="638" y2="683" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="688" y1="635" x2="688" y2="683" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="738" y1="635" x2="738" y2="683" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <polyline points="588,648 765,655 788,640" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="605" y="666" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">20</text>
-        <text x="625" y="627" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BANC. CEL. RO. C2 (4 Celdas)</text>
-
-        <polyline points="755,635 755,585 875,585" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="780" y="578" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">27 ({res['s27_esp_ro2']:.1f} kg/h)</text>
-        <rect x="878" y="568" width="96" height="46" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <line x1="926" y1="568" x2="926" y2="614" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <polyline points="878,580 955,586 974,572" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="892" y="598" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">21</text>
-        <text x="878" y="630" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">BAN. CEL. CL. 2</text>
-
-        <polyline points="945,568 945,525 775,525" fill="none" stroke="{line_conc}" stroke-width="2.5" marker-end="url(#arr-conc)"/>
-        <circle cx="765" cy="525" r="7" fill="none" stroke="{line_conc}" stroke-width="2"/>
-        <text x="845" y="518" fill="{line_conc}" font-size="11" font-weight="bold" class="lbl">29</text>
-        <text x="665" y="546" fill="{line_conc}" font-size="12" font-weight="bold" class="lbl">CONC. FINAL C2 ({res['s29_c2']:.2f} kg/h | Ley {m2_sym}: {res['ley_c2_m2']:.1f}% | Rec: {res['rec_glob_c2']:.1f}%)</text>
-
-        <polyline points="788,662 998,662 998,718 935,718" fill="none" stroke="{line_main}" stroke-width="2" marker-end="url(#arr)"/>
-        <text x="885" y="656" fill="{line_main}" font-size="11" font-weight="bold" class="lbl">28</text>
-        <rect x="680" y="696" width="250" height="46" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <line x1="730" y1="696" x2="730" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="780" y1="696" x2="780" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="830" y1="696" x2="830" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <line x1="880" y1="696" x2="880" y2="742" stroke="{eq_stroke}" stroke-width="1.5"/>
-        <polyline points="930,708 705,714 680,700" fill="none" stroke="{eq_stroke}" stroke-width="1.8"/>
-        <text x="905" y="726" fill="{fg_txt}" font-size="12" font-weight="bold" class="lbl">22</text>
-        <text x="710" y="691" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">BANCO DE CELDAS SCV. C2 (5 Celdas)</text>
-
-        <polyline points="974,592 1062,592 1062,672" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="1068" y="635" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">30</text>
-        <polyline points="710,742 710,752 1042,752 1042,672" fill="none" stroke="{line_rec}" stroke-width="1.8"/>
-        <text x="850" y="749" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">31</text>
-
-        <polygon points="1032,675 1072,675 1072,705 1052,722 1032,705" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="1044" y="698" fill="{fg_txt}" font-size="11" font-weight="bold" class="lbl">23</text>
-        <text x="952" y="698" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">SUMIDERO 4</text>
-
-        <polyline points="1052,722 1052,735 1100,735" fill="none" stroke="{line_rec}" stroke-width="1.8" marker-end="url(#arr-rec)"/>
-        <text x="1072" y="730" fill="{line_rec}" font-size="10" font-weight="bold" class="lbl">32</text>
-        <circle cx="1116" cy="735" r="12" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="2"/>
-        <text x="1109" y="739" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">24</text>
-        <text x="1095" y="718" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">BOM. 4</text>
-
-        <g opacity="{op_rec}">
-          <polyline points="1128,735 1155,735 1155,498 468,498 468,508" fill="none" stroke="{line_rec}" stroke-width="2" stroke-dasharray="6,3" marker-end="url(#arr-rec)"/>
-          <text x="795" y="493" fill="{line_rec}" font-size="11" font-weight="bold" class="lbl">33 (Medios C2: {res['s33_medios_c2']:.1f} kg/h)</text>
-        </g>
-      </g>
-
-      <g opacity="{op_rel}">
-        <polyline points="680,718 425,718" fill="none" stroke="{line_rec}" stroke-width="2.5" marker-end="url(#arr-rec)"/>
-        <circle cx="415" cy="718" r="7" fill="none" stroke="{line_rec}" stroke-width="2"/>
-        <text x="435" y="708" fill="{line_rec}" font-size="11.5" font-weight="bold" class="lbl">34 — RELAVE FINAL ({res['s34_relave']:.1f} kg/h)</text>
-        <text x="435" y="734" fill="{line_rec}" font-size="10.5" font-weight="bold" class="lbl">Leyes: {res['ley_rel_m1']:.2f}% {m1_sym} | {res['ley_rel_m2']:.2f}% {m2_sym} | Fe: {ley_f_fe:.1f}%</text>
-      </g>
-
-      <!-- Leyenda Técnica de Corrientes (Esquina Inferior Izquierda) -->
-      <rect x="20" y="585" width="245" height="72" rx="4" fill="{legend_bg}" stroke="{legend_stroke}" stroke-width="1.2"/>
-      <text x="30" y="602" fill="{fg_txt}" font-size="10" font-weight="bold" class="lbl">LEYENDA DE CORRIENTES</text>
-      <line x1="30" y1="615" x2="54" y2="615" stroke="{line_main}" stroke-width="2.2"/>
-      <text x="60" y="619" fill="{fg_txt}" font-size="9.5" class="lbl">Pulpa / Alimentación / Agua</text>
-      <line x1="30" y1="630" x2="54" y2="630" stroke="{line_conc}" stroke-width="2.4"/>
-      <text x="60" y="634" fill="{fg_txt}" font-size="9.5" class="lbl">Concentrado Final (C1 / C2)</text>
-      <line x1="30" y1="645" x2="54" y2="645" stroke="{line_rec}" stroke-width="2.2" stroke-dasharray="5,3"/>
-      <text x="60" y="649" fill="{fg_txt}" font-size="9.5" class="lbl">Relave Final / Recirculación</text>
-
-      <!-- Cajetín Técnico UNMSM -->
-      <rect x="20" y="665" width="245" height="78" rx="4" fill="{eq_fill}" stroke="{eq_stroke}" stroke-width="1.4"/>
-      <text x="30" y="683" fill="{fg_txt}" font-size="10.5" font-weight="bold" class="lbl">PLANTA PILOTO JICA — UNMSM</text>
-      <text x="30" y="699" fill="{fg_txt}" font-size="9.5" class="lbl">Ing. Metalúrgica | 24 Equipos / 34 Corr.</text>
-      <text x="30" y="715" fill="{fg_txt}" font-size="9.5" class="lbl">Esquema Activo: {m1_sym} / {m2_sym} | Fe: {ley_f_fe:.1f}%</text>
-      <text x="30" y="731" fill="{fg_txt}" font-size="8.5" class="lbl">Modelo de Simulación en Estado Estacionario</text>
-    </svg>"""
 
     svg_only = f"""<svg id="jica-svg-plan" viewBox="0 0 1250 780" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="display:block; font-family: Inter, Arial, sans-serif; background:{bg_svg};">
       <defs>
@@ -1369,14 +1604,60 @@ with tab_pfd:
     </body>
     </html>
     """
-    components.html(sheet_html, height=690, scrolling=False)
 
-    st.download_button(
-        label="Descargar Plano Flowsheet (.SVG)",
-        data=svg_only.encode("utf-8"),
-        file_name=f"Flowsheet_JICA_{m1_sym}_{m2_sym}.svg",
-        mime="image/svg+xml"
-    )
+    col_plano, col_ficha = st.columns([3.25, 1.25])
+    with col_plano:
+        components.html(sheet_html, height=690, scrolling=False)
+        st.download_button(
+            label="Descargar Plano Flowsheet (.SVG)",
+            data=svg_only.encode("utf-8"),
+            file_name=f"Flowsheet_JICA_{m1_sym}_{m2_sym}.svg",
+            mime="image/svg+xml"
+        )
+
+    with col_ficha:
+        st.markdown(f"""
+        <div class="ficha-card">
+          <div class="ficha-title">Ficha de Corriente [{int(fila_corr['N° Corriente'])}]</div>
+          <div style="font-size:0.77rem; color:#334155; margin-bottom:6px;">{fila_corr['Descripción en Plano JICA']}</div>
+          <div class="ficha-row"><span>Sólidos</span><strong>{fila_corr['Sólidos (kg/h)']:.2f} kg/h</strong></div>
+          <div class="ficha-row"><span>% Sólidos</span><strong>{fila_corr['% Sólidos']:.1f} %</strong></div>
+          <div class="ficha-row"><span>Agua</span><strong>{fila_corr['Agua (L/h)']:.1f} L/h</strong></div>
+          <div class="ficha-row"><span>Pulpa Total</span><strong>{fila_corr['Pulpa Total (L/h)']:.1f} L/h</strong></div>
+          <div class="ficha-row"><span>P80 Estimado</span><strong>{fila_corr['P80 Estimado (µm)']:.0f} µm</strong></div>
+          <div class="ficha-row"><span>Ley {m1_sym} / {m2_sym}</span><strong>{fila_corr[f'Ley {m1_sym} (%)']:.2f}% / {fila_corr[f'Ley {m2_sym} (%)']:.2f}%</strong></div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown('<div class="ficha-card"><div class="ficha-title">Ajustes Rápidos en Plano</div>', unsafe_allow_html=True)
+        st.number_input(
+            "Alimento Fresco (kg/h)",
+            min_value=100.0, max_value=800.0, step=25.0,
+            key="pfd_F", on_change=sync_param, args=("val_F", "pfd_F"),
+            help="Modifica la entrada de mineral fresco directamente junto al plano."
+        )
+        render_semaforo("alimento", st.session_state["val_F"])
+
+        st.number_input(
+            "% Sólidos Molino 2'x2'",
+            min_value=55.0, max_value=84.0, step=1.0,
+            key="pfd_sol_mol", on_change=sync_param, args=("val_sol_mol", "pfd_sol_mol"),
+            help="Ajusta la densidad de pulpa en el Molino de Bolas [Equipo 5]."
+        )
+        render_semaforo("sol_molino", st.session_state["val_sol_mol"])
+
+        st.number_input(
+            "Carga Circulante (%)",
+            min_value=80.0, max_value=320.0, step=10.0,
+            key="pfd_cc_esp", on_change=sync_param, args=("val_cc_esp", "pfd_cc_esp"),
+            help="Ajusta el retorno de arenas del Clasificador Helicoidal [Equipo 6]."
+        )
+        render_semaforo("cc_espiral", st.session_state["val_cc_esp"])
+
+        if st.button("Fijar Caso Base desde Plano", width="stretch"):
+            st.session_state["caso_base"] = res.copy()
+            st.caption("Caso base actualizado.")
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------- PESTAÑA 2: ETAPA 1 CALCULADA --------------------
 with tab_et1:
@@ -1523,7 +1804,7 @@ with tab_34:
         ws_bal = writer.sheets["Balance_Global_C1_C2"]
         for c_idx, col_name in enumerate(df_3prod_r.columns):
             ws_bal.write(0, c_idx, col_name, fmt_header)
-            ws_bal.set_column(c_idx, c_idx, 22)
+            ws_bal.set_column(c_idx, c_idx, 36 if c_idx == 0 else 20)
             for r_idx in range(1, len(df_3prod_r) + 1):
                 val = df_3prod_r.iloc[r_idx - 1, c_idx]
                 ws_bal.write(r_idx, c_idx, val, fmt_text if c_idx == 0 else fmt_num)
@@ -1605,7 +1886,7 @@ ts_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 estado_masa = "Balance Convergente — Error < 0.01%" if res["error_masa_pct"] < 0.01 else f"Balance Convergente — Error {res['error_masa_pct']:.4f}%"
 st.markdown(f"""
 <div class="status-footer">
-  <span>Motor JICA Sim v3.2 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
+  <span>Motor JICA Sim v3.3 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
   <span>{estado_masa}</span>
   <span>Última actualización: {ts_actual}</span>
 </div>
