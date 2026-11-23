@@ -37,6 +37,7 @@ DEFAULTS = {
     "p_ph_c2": 10.8,
     "p_act_c2": 350.0,
     "p_col_c2": 45.0,
+    "p_conc_sol_pct": 5.0,
     "p_rec_ro1": 82.0,
     "p_rec_cl1": 88.0,
     "p_rec_scv1": 55.0,
@@ -45,17 +46,6 @@ DEFAULTS = {
     "p_rec_scv2": 50.0,
     "base_updated_ts": "",
 }
-
-PARAM_KEYS = [
-    "p_modo", "p_tema", "p_esquema",
-    "p_F", "p_f80", "p_set_mand", "p_set_rod", "p_wi",
-    "p_sol_mol", "p_cc_esp", "p_sol_reb", "p_sg",
-    "p_ley_m1", "p_ley_m2", "p_ley_fe",
-    "p_ph_c1", "p_dep_c1", "p_col_c1",
-    "p_ph_c2", "p_act_c2", "p_col_c2",
-    "p_rec_ro1", "p_rec_cl1", "p_rec_scv1",
-    "p_rec_ro2", "p_rec_cl2", "p_rec_scv2",
-]
 
 for k_def, v_def in DEFAULTS.items():
     if k_def not in st.session_state:
@@ -147,6 +137,7 @@ dosis_col_c1 = st.session_state["p_col_c1"]
 ph_c2 = st.session_state["p_ph_c2"]
 dosis_act_c2 = st.session_state["p_act_c2"]
 dosis_col_c2 = st.session_state["p_col_c2"]
+conc_sol_pct = st.session_state["p_conc_sol_pct"]
 
 rec_ro1 = st.session_state["p_rec_ro1"]
 rec_cl1 = st.session_state["p_rec_cl1"]
@@ -277,6 +268,23 @@ footer {
     padding: 4px 7px;
     margin: -6px 0 8px 0;
     line-height: 1.32;
+}
+
+.reagent-box {
+    background-color: #F8FAFC;
+    border: 1px solid #CBD5E1;
+    border-radius: 5px;
+    padding: 6px 8px;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    color: #0F172A;
+}
+
+.reagent-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    border-bottom: 1px dashed #E2E8F0;
 }
 
 /* Semáforos visuales (Verde / Ámbar / Rojo) */
@@ -682,6 +690,26 @@ res = simular_planta(
     rec_ro1, rec_cl1, rec_scv1, rec_ro2, rec_cl2, rec_scv2
 )
 
+# ==================== INDICADORES PRÁCTICOS DE PLANTA PILOTO (ETAPA 2 BLOQUE 2) ====================
+F_tph = max(F_kgh / 1000.0, 1e-6)
+ratio_k_c1 = F_kgh / max(res["s17_c1"], 1e-6)
+ratio_k_c2 = F_kgh / max(res["s29_c2"], 1e-6)
+agua_total_lh = res["w6_agua_ent"] + res["w8_agua_sal"]
+consumo_agua_m3_t = (agua_total_lh / 1000.0) / F_tph
+
+
+def calc_reactivo(dosis_gt, conc_pct):
+    gh = dosis_gt * F_tph
+    # 1 g en solución al conc_pct (% p/v) requiere (100 / conc_pct) mL -> /60 para L/min -> *1000 para mL/min
+    ml_min = (gh * (100.0 / max(conc_pct, 0.1))) / 60.0
+    return gh, ml_min
+
+
+gh_dep1, ml_dep1 = calc_reactivo(dosis_dep_c1, conc_sol_pct)
+gh_col1, ml_col1 = calc_reactivo(dosis_col_c1, conc_sol_pct)
+gh_act2, ml_act2 = calc_reactivo(dosis_act_c2, conc_sol_pct)
+gh_col2, ml_col2 = calc_reactivo(dosis_col_c2, conc_sol_pct)
+
 # ==================== COMPARADOR CASO BASE VS. ACTUAL ====================
 if "caso_base" not in st.session_state:
     st.session_state["caso_base"] = res.copy()
@@ -744,7 +772,7 @@ st.markdown(f"""
 if es_modo_guiado:
     st.markdown("""
     <div class="pilot-note">
-      <strong>Escala Piloto JICA (UNMSM):</strong> Opera en cientos de <strong>kg/h</strong> (a diferencia de gran minería en miles de t/d) para aprender el circuito real sin riesgo. Edita los parámetros junto al plano y baja para ver las <strong>gráficas y balances en esta misma página</strong>.
+      <strong>Escala Piloto JICA (UNMSM):</strong> Opera en cientos de <strong>kg/h</strong> (a diferencia de gran minería en miles de t/d) para aprender el circuito real sin riesgo. Edita los parámetros junto al plano y baja para ver las <strong>gráficas, reactivos y balances en esta misma página</strong>.
     </div>
     """, unsafe_allow_html=True)
 
@@ -858,14 +886,14 @@ with st.expander("Tour / Guía por Etapas para Estudiantes (Clic para abrir qué
         st.markdown(f"""
         <div class="tour-card">
           <strong>Objetivo de la Etapa 2 (Equipos 9 al 24):</strong> Separar {m1_sym} en C1 y {m2_sym} en C2 enviando la ganga al Relave [Corr. 34].<br>
-          <strong>Qué probar ahora:</strong> Resalta C1 o C2 con <strong>Trazabilidad de ruta</strong>, entra a <em>Química</em> en el editor del plano y modifica ZnSO4, CuSO4 o pH para observar cómo responden leyes, recuperaciones y la curva de sensibilidad.
+          <strong>Qué probar ahora:</strong> Resalta C1 o C2 con <strong>Trazabilidad de ruta</strong>, entra a <em>Química</em> en el editor del plano y modifica ZnSO4, CuSO4 o pH para ver cómo cambian leyes, recuperaciones y la dosificación en <strong>g/h y mL/min</strong>.
         </div>
         """, unsafe_allow_html=True)
     else:
         st.markdown("""
         <div class="tour-card">
           <strong>Objetivo de la Etapa 3 (Análisis de Escenarios):</strong> Evaluar mejoras operativas como un ingeniero de planta.<br>
-          <strong>Qué probar ahora:</strong> Presiona <strong>Fijar Caso Base</strong> en el editor del plano, cambia el <strong>Alimento Fresco (kg/h)</strong> y revisa las variaciones en los 5 KPIs, las gráficas en vivo y el reporte Excel al final de la página.
+          <strong>Qué probar ahora:</strong> Presiona <strong>Fijar Caso Base</strong> en el editor del plano, cambia el <strong>Alimento Fresco (kg/h)</strong> y revisa las variaciones en los 5 KPIs, el Ratio de Concentración (K), las gráficas en vivo y el reporte Excel.
         </div>
         """, unsafe_allow_html=True)
 
@@ -1408,8 +1436,20 @@ with col_panel:
                 st.number_input("pH C2", min_value=8.0, max_value=12.5, step=0.1, key="p_ph_c2")
                 st.number_input("CuSO4 C2 (g/t)", min_value=50.0, max_value=1000.0, step=25.0, key="p_act_c2")
                 st.number_input("Z-6 C2 (g/t)", min_value=5.0, max_value=150.0, step=5.0, key="p_col_c2")
+                st.number_input("Sol. (% p/v)", min_value=1.0, max_value=25.0, step=1.0, key="p_conc_sol_pct", help="Concentración de solución preparada para estimar mL/min en planta piloto.")
+
+            st.markdown(f"""
+            <div class="reagent-box">
+              <div class="ficha-title">Dosificación Piloto ({F_tph:.3f} t/h | Sol. {conc_sol_pct:.0f}% p/v)</div>
+              <div class="reagent-line"><span>ZnSO4 [Eq. 9]</span><strong>{gh_dep1:.1f} g/h ({ml_dep1:.1f} mL/min)</strong></div>
+              <div class="reagent-line"><span>Z-11 [Eq. 10]</span><strong>{gh_col1:.1f} g/h ({ml_col1:.1f} mL/min)</strong></div>
+              <div class="reagent-line"><span>CuSO4 [Eq. 18]</span><strong>{gh_act2:.1f} g/h ({ml_act2:.1f} mL/min)</strong></div>
+              <div class="reagent-line"><span>Z-6 [Eq. 19]</span><strong>{gh_col2:.1f} g/h ({ml_col2:.1f} mL/min)</strong></div>
+            </div>
+            """, unsafe_allow_html=True)
+
             render_guide_hint(
-                "C1: depresor ZnSO4 sube ley y colector Z-11 sube recuperación. C2: CuSO4 y pH alcalino reactivan el segundo mineral.",
+                "Convierte dosis de g/t a g/h y mL/min para preparación en planta piloto UNMSM.",
                 es_modo_guiado
             )
 
@@ -1553,8 +1593,8 @@ with col_g2:
 # ==================== SECCIÓN 3: BALANCES, 34 CORRIENTES Y EXPORTACIÓN EXCEL ====================
 st.markdown("""
 <div id="sec-balance" class="section-banner">
-  <div class="section-banner-title">3. Balances Metalúrgicos, 34 Corrientes y Reporte Excel (.XLSX)</div>
-  <div class="section-banner-sub">Balance global de 3 productos, salidas de molienda y exportación con gráficos nativos</div>
+  <div class="section-banner-title">3. Balances Metalúrgicos, Indicadores K y Agua, 34 Corrientes y Excel</div>
+  <div class="section-banner-sub">Ratio de Concentración (K), consumo específico de agua, balance global y exportación con gráficos nativos</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -1565,22 +1605,22 @@ with col_b1:
     st.dataframe(df_3prod.round(2), hide_index=True, width="stretch")
 
 with col_b2:
-    st.markdown("**Salidas Calculadas de Conminución y Clasificación**")
+    st.markdown("**Salidas Calculadas e Indicadores de Planta Piloto**")
     df_calc_et1 = pd.DataFrame({
-        "Variable Calculada": [
-            "P80 Chanc. Mandíbulas [Eq. 1]",
-            "P80 Rodillos / F80 Molino [Eq. 2/5]",
+        "Indicador / Variable": [
+            "P80 Chanc. Mandíbulas / Rodillos",
             "P80 Rebose Clasificador [Corr. 10]",
             "Arenas Recirculadas [Corr. 9]",
-            "Agua Entrada [Corr. 6] / Espiral [Corr. 8]",
+            f"Ratio de Concentración K ({m1_sym} / {m2_sym})",
+            "Consumo Específico de Agua (m³/t)",
             "Energía Bond / Potencia Molino 2'x2'"
         ],
         "Valor": [
-            f"{res['p80_mand_mm']:.2f} mm",
-            f"{res['p80_rod_mm']:.2f} mm ({res['f80_mol_um']:.0f} µm)",
+            f"{res['p80_mand_mm']:.1f} mm / {res['p80_rod_mm']:.1f} mm ({res['f80_mol_um']:.0f} µm)",
             f"{res['p80_reb_calc']:.1f} µm",
             f"{res['s9_arenas']:.1f} kg/h",
-            f"{res['w6_agua_ent']:.1f} / {res['w8_agua_sal']:.1f} L/h",
+            f"K_C1: {ratio_k_c1:.1f} | K_C2: {ratio_k_c2:.1f}",
+            f"{consumo_agua_m3_t:.2f} m³/t ({agua_total_lh:.0f} L/h)",
             f"{res['w_bond_kwh_t']:.2f} kWh/t | {res['pot_molino_kw']:.2f} kW"
         ]
     })
@@ -1614,8 +1654,11 @@ with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
         ("P80 Rebose Clasificador (µm)", res["p80_reb_calc"]),
         (f"Recuperación Global {m1_sym} C1 (%)", res["rec_glob_c1"]),
         (f"Ley {m1_sym} en Conc. C1 (%)", res["ley_c1_m1"]),
+        (f"Ratio Concentración K C1 (F/C1)", ratio_k_c1),
         (f"Recuperación Global {m2_sym} C2 (%)", res["rec_glob_c2"]),
         (f"Ley {m2_sym} en Conc. C2 (%)", res["ley_c2_m2"]),
+        (f"Ratio Concentración K C2 (F/C2)", ratio_k_c2),
+        ("Consumo Específico de Agua (m³/t)", consumo_agua_m3_t),
         ("Relave Final [Corr. 34] (kg/h)", res["s34_relave"]),
     ]
     ws_res.write("A4", "Indicador Clave", fmt_header)
@@ -1623,7 +1666,7 @@ with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
     for idx, (lbl_k, val_k) in enumerate(resumen_filas, start=5):
         ws_res.write(f"A{idx}", lbl_k, fmt_meta_lbl)
         ws_res.write(f"B{idx}", float(val_k), fmt_meta_val)
-    ws_res.set_column("A:A", 34)
+    ws_res.set_column("A:A", 36)
     ws_res.set_column("B:B", 18)
 
     # --- HOJA 2: BALANCE GLOBAL C1 / C2 ---
@@ -1712,7 +1755,7 @@ ts_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 estado_masa = "Balance Convergente — Error < 0.01%" if res["error_masa_pct"] < 0.01 else f"Balance Convergente — Error {res['error_masa_pct']:.4f}%"
 st.markdown(f"""
 <div class="status-footer">
-  <span>Motor JICA Sim v3.6 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
+  <span>Motor JICA Sim v3.7 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
   <span>{estado_masa}</span>
   <span>Última actualización: {ts_actual}</span>
 </div>
