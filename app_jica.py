@@ -467,6 +467,15 @@ footer {
     line-height: 1.42;
 }
 
+.reto-item {
+    border-radius: 5px;
+    padding: 6px 10px;
+    margin-top: 5px;
+    font-size: 0.78rem;
+}
+.reto-ok { background-color: #F0FDF4; border: 1px solid #BBF7D0; color: #166534; }
+.reto-pend { background-color: #F8FAFC; border: 1px solid #CBD5E1; color: #334155; }
+
 button[data-baseweb="tab"] {
     font-weight: 600;
     font-size: 0.78rem;
@@ -690,7 +699,7 @@ res = simular_planta(
     rec_ro1, rec_cl1, rec_scv1, rec_ro2, rec_cl2, rec_scv2
 )
 
-# ==================== INDICADORES PRÁCTICOS DE PLANTA PILOTO (ETAPA 2 BLOQUE 2) ====================
+# ==================== INDICADORES PRÁCTICOS DE PLANTA PILOTO ====================
 F_tph = max(F_kgh / 1000.0, 1e-6)
 ratio_k_c1 = F_kgh / max(res["s17_c1"], 1e-6)
 ratio_k_c2 = F_kgh / max(res["s29_c2"], 1e-6)
@@ -700,7 +709,6 @@ consumo_agua_m3_t = (agua_total_lh / 1000.0) / F_tph
 
 def calc_reactivo(dosis_gt, conc_pct):
     gh = dosis_gt * F_tph
-    # 1 g en solución al conc_pct (% p/v) requiere (100 / conc_pct) mL -> /60 para L/min -> *1000 para mL/min
     ml_min = (gh * (100.0 / max(conc_pct, 0.1))) / 60.0
     return gh, ml_min
 
@@ -864,36 +872,68 @@ df_3prod = pd.DataFrame({
 # ==================== SECCIÓN 1: FLOWSHEET + EDITOR DE EQUIPOS EN VIVO ====================
 st.markdown('<div id="sec-plano"></div>', unsafe_allow_html=True)
 
-with st.expander("Tour / Guía por Etapas para Estudiantes (Clic para abrir qué probar paso a paso)", expanded=False):
-    etapa_tour = st.radio(
-        "Selecciona la etapa del recorrido:",
-        [
-            "Etapa 1: Chancado, Molienda y Clasificación Helicoidal",
-            "Etapa 2: Flotación Diferencial C1 y C2 y Reactivos",
-            "Etapa 3: Comparativa con Caso Base y Balance"
-        ],
-        index=0,
-        horizontal=True
-    )
-    if etapa_tour.startswith("Etapa 1"):
-        st.markdown(f"""
-        <div class="tour-card">
-          <strong>Objetivo de la Etapa 1 (Equipos 1 al 8):</strong> Entender cómo se reduce el tamaño de la roca hasta liberar los sulfuros.<br>
-          <strong>Qué probar ahora:</strong> En el editor de la derecha del plano (<em>Molienda</em>), varía el <strong>% Sólidos Molino 2'x2'</strong> o la <strong>Carga Circulante Espiral (%)</strong> y mira cómo cambian el <strong>P80 [Corr. 10]</strong> (actual: <strong>{res['p80_reb_calc']:.1f} µm</strong>), el plano y la curva Rosin-Rammler más abajo.
-        </div>
-        """, unsafe_allow_html=True)
-    elif etapa_tour.startswith("Etapa 2"):
-        st.markdown(f"""
-        <div class="tour-card">
-          <strong>Objetivo de la Etapa 2 (Equipos 9 al 24):</strong> Separar {m1_sym} en C1 y {m2_sym} en C2 enviando la ganga al Relave [Corr. 34].<br>
-          <strong>Qué probar ahora:</strong> Resalta C1 o C2 con <strong>Trazabilidad de ruta</strong>, entra a <em>Química</em> en el editor del plano y modifica ZnSO4, CuSO4 o pH para ver cómo cambian leyes, recuperaciones y la dosificación en <strong>g/h y mL/min</strong>.
-        </div>
-        """, unsafe_allow_html=True)
-    else:
+with st.expander("Tour por Etapas, Retos Prácticos y Glosario (Clic para desplegar)", expanded=False):
+    sub_t1, sub_t2, sub_t3 = st.tabs(["Recorrido por Etapas", "Retos con Verificación", "Glosario Rápido"])
+
+    with sub_t1:
+        etapa_tour = st.radio(
+            "Selecciona la etapa del recorrido:",
+            [
+                "Etapa 1: Chancado, Molienda y Clasificación Helicoidal",
+                "Etapa 2: Flotación Diferencial C1 y C2 y Reactivos",
+                "Etapa 3: Comparativa con Caso Base y Balance"
+            ],
+            index=0,
+            horizontal=True
+        )
+        if etapa_tour.startswith("Etapa 1"):
+            st.markdown(f"""
+            <div class="tour-card">
+              <strong>Objetivo de la Etapa 1 (Equipos 1 al 8):</strong> Entender cómo se reduce el tamaño de la roca hasta liberar los sulfuros.<br>
+              <strong>Qué probar ahora:</strong> En el editor de la derecha del plano (<em>Molienda</em>), varía el <strong>% Sólidos Molino 2'x2'</strong> o la <strong>Carga Circulante Espiral (%)</strong> y mira cómo cambian el <strong>P80 [Corr. 10]</strong> (actual: <strong>{res['p80_reb_calc']:.1f} µm</strong>), el plano y la curva Rosin-Rammler más abajo.
+            </div>
+            """, unsafe_allow_html=True)
+        elif etapa_tour.startswith("Etapa 2"):
+            st.markdown(f"""
+            <div class="tour-card">
+              <strong>Objetivo de la Etapa 2 (Equipos 9 al 24):</strong> Separar {m1_sym} en C1 y {m2_sym} en C2 enviando la ganga al Relave [Corr. 34].<br>
+              <strong>Qué probar ahora:</strong> Resalta C1 o C2 con <strong>Trazabilidad de ruta</strong>, entra a <em>Química</em> en el editor del plano y modifica ZnSO4, CuSO4 o pH para ver cómo cambian leyes, recuperaciones y la dosificación en <strong>g/h y mL/min</strong>.
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.markdown("""
+            <div class="tour-card">
+              <strong>Objetivo de la Etapa 3 (Análisis de Escenarios):</strong> Evaluar mejoras operativas como un ingeniero de planta.<br>
+              <strong>Qué probar ahora:</strong> Presiona <strong>Fijar Caso Base</strong> en el editor del plano, cambia el <strong>Alimento Fresco (kg/h)</strong> y revisa las variaciones en los 5 KPIs, el Ratio de Concentración (K), las gráficas en vivo y el reporte Excel.
+            </div>
+            """, unsafe_allow_html=True)
+
+    with sub_t2:
+        reto1_ok = (res["p80_reb_calc"] < 130.0) and (not tiene_error)
+        reto2_ok = (res["rec_glob_c1"] >= 87.0) and (res["ley_c1_m1"] >= 58.0)
+        reto3_ok = abs(res["s17_c1"] - base["s17_c1"]) > 0.05
+
+        st.markdown(
+            f'<div class="reto-item {"reto-ok" if reto1_ok else "reto-pend"}">'
+            f'<strong>{"[COMPLETADO]" if reto1_ok else "[PENDIENTE]"} Reto 1 — Molienda Fina Segura:</strong> '
+            f'Logra un P80 de rebose &lt; 130 µm (actual: <strong>{res["p80_reb_calc"]:.1f} µm</strong>) sin alarmas rojas SCADA.</div>'
+            f'<div class="reto-item {"reto-ok" if reto2_ok else "reto-pend"}">'
+            f'<strong>{"[COMPLETADO]" if reto2_ok else "[PENDIENTE]"} Reto 2 — Alta Recuperación en C1:</strong> '
+            f'Alcanza recuperación de {m1_sym} en C1 &ge; 87.0% manteniendo ley &ge; 58.0% (actual: <strong>{res["rec_glob_c1"]:.1f}%</strong> | ley <strong>{res["ley_c1_m1"]:.1f}%</strong>).</div>'
+            f'<div class="reto-item {"reto-ok" if reto3_ok else "reto-pend"}">'
+            f'<strong>{"[COMPLETADO]" if reto3_ok else "[PENDIENTE]"} Reto 3 — Comparativa Activa vs. Caso Base:</strong> '
+            f'Fija un Caso Base y modifica algún parámetro para observar un cambio real en el Concentrado C1.</div>',
+            unsafe_allow_html=True
+        )
+
+    with sub_t3:
         st.markdown("""
         <div class="tour-card">
-          <strong>Objetivo de la Etapa 3 (Análisis de Escenarios):</strong> Evaluar mejoras operativas como un ingeniero de planta.<br>
-          <strong>Qué probar ahora:</strong> Presiona <strong>Fijar Caso Base</strong> en el editor del plano, cambia el <strong>Alimento Fresco (kg/h)</strong> y revisa las variaciones en los 5 KPIs, el Ratio de Concentración (K), las gráficas en vivo y el reporte Excel.
+          <strong>F80 / P80:</strong> Tamaño de abertura de tamiz (en mm o µm) por donde pasa el 80% en peso del material.<br>
+          <strong>CSS / Luz:</strong> Abertura de descarga en chancadoras; al cerrarla, baja el tamaño de descarga.<br>
+          <strong>Work Index (Wi):</strong> Resistencia del mineral a la conminución (kWh/t); a mayor Wi, mayor demanda energética.<br>
+          <strong>Carga Circulante (%):</strong> Relación entre las arenas gruesas que retornan al molino y el alimento fresco.<br>
+          <strong>Rougher / Cleaner / Scavenger:</strong> Etapas de desbaste inicial, limpieza de espumas y barrido de colas respectivamente.
         </div>
         """, unsafe_allow_html=True)
 
@@ -1528,12 +1568,12 @@ with col_panel:
 # ==================== SECCIÓN 2: GRÁFICAS EN VIVO (MISMA PÁGINA) ====================
 st.markdown("""
 <div id="sec-graficas" class="section-banner">
-  <div class="section-banner-title">2. Gráficas Metalúrgicas en Vivo (Conminución y Sensibilidad)</div>
+  <div class="section-banner-title">2. Gráficas Metalúrgicas en Vivo (Granulometría, Sensibilidad y Distribución)</div>
   <div class="section-banner-sub">Se actualizan automáticamente al modificar cualquier parámetro arriba</div>
 </div>
 """, unsafe_allow_html=True)
 
-col_g1, col_g2 = st.columns(2)
+col_g1, col_g2, col_g3 = st.columns(3)
 
 with col_g1:
     n_rr = 1.15
@@ -1544,21 +1584,21 @@ with col_g1:
     pas_rod = 100.0 * (1.0 - np.exp(-((aberturas / d63_rod) ** 0.95)))
 
     fig_g = go.Figure()
-    fig_g.add_trace(go.Scatter(x=aberturas, y=pas_rod, mode="lines", name=f"Salida Rodillos (F80 = {res['f80_mol_um']:.0f} µm)", line=dict(dash="dash", color="#475569", width=2.4)))
-    fig_g.add_trace(go.Scatter(x=aberturas, y=pas_reb, mode="lines", name=f"Rebose Espiral (P80 = {res['p80_reb_calc']:.1f} µm)", line=dict(color="#1E3A8A", width=3.2)))
-    fig_g.add_trace(go.Scatter(x=[15, 25000], y=[80, 80], mode="lines", name="80% Pasante", line=dict(dash="dot", color="#B91C1C", width=1.6)))
-    fig_g.add_trace(go.Scatter(x=[149, 149], y=[0, 100], mode="lines", name="Malla 100 (149 µm)", line=dict(dash="dot", color="#0F766E", width=1.6)))
+    fig_g.add_trace(go.Scatter(x=aberturas, y=pas_rod, mode="lines", name=f"Rodillos ({res['f80_mol_um']:.0f} µm)", line=dict(dash="dash", color="#475569", width=2.2)))
+    fig_g.add_trace(go.Scatter(x=aberturas, y=pas_reb, mode="lines", name=f"Rebose ({res['p80_reb_calc']:.1f} µm)", line=dict(color="#1E3A8A", width=3.0)))
+    fig_g.add_trace(go.Scatter(x=[15, 25000], y=[80, 80], mode="lines", name="80% Pasante", line=dict(dash="dot", color="#B91C1C", width=1.5)))
+    fig_g.add_trace(go.Scatter(x=[149, 149], y=[0, 100], mode="lines", name="Malla 100 (149 µm)", line=dict(dash="dot", color="#0F766E", width=1.5)))
     fig_g.update_layout(
-        title="Curvas Granulométricas Rosin-Rammler (Etapa 1)",
-        xaxis=dict(type="log", title="Abertura (µm)", range=[np.log10(15), np.log10(25000)], tickvals=[20, 37, 53, 74, 105, 149, 210, 500, 1000, 2500, 7500, 20000]),
-        yaxis=dict(title="% Pasante Acumulado", range=[0, 105]),
+        title="Rosin-Rammler (Etapa 1)",
+        xaxis=dict(type="log", title="Abertura (µm)", range=[np.log10(15), np.log10(25000)], tickvals=[20, 53, 149, 500, 2500, 10000]),
+        yaxis=dict(title="% Pasante", range=[0, 105]),
         template="plotly_white",
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
-        font=dict(family="Inter, Arial, sans-serif", color="#0F172A"),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.30, xanchor="center", x=0.5),
-        margin=dict(t=45, b=85, l=50, r=20),
-        height=410
+        font=dict(family="Inter, Arial, sans-serif", color="#0F172A", size=11),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.34, xanchor="center", x=0.5),
+        margin=dict(t=42, b=90, l=45, r=15),
+        height=395
     )
     st.plotly_chart(fig_g, width="stretch")
 
@@ -1573,22 +1613,53 @@ with col_g2:
         recs_m2_sens.append(r2_s)
 
     fig_s = go.Figure()
-    fig_s.add_trace(go.Scatter(x=rango_p80, y=recs_m1_sens, mode="lines+markers", name=f"Recuperación {m1_sym} C1 (%)", line=dict(color="#1E3A8A", width=2.8)))
-    fig_s.add_trace(go.Scatter(x=rango_p80, y=recs_m2_sens, mode="lines+markers", name=f"Recuperación {m2_sym} C2 (%)", line=dict(color="#475569", width=2.8)))
-    fig_s.add_trace(go.Scatter(x=[res["p80_reb_calc"], res["p80_reb_calc"]], y=[50, 95], mode="lines", name=f"P80 Actual ({res['p80_reb_calc']:.1f} µm)", line=dict(dash="dash", color="#0F766E", width=2.0)))
+    fig_s.add_trace(go.Scatter(x=rango_p80, y=recs_m1_sens, mode="lines+markers", name=f"Rec. {m1_sym} C1 (%)", line=dict(color="#1E3A8A", width=2.5)))
+    fig_s.add_trace(go.Scatter(x=rango_p80, y=recs_m2_sens, mode="lines+markers", name=f"Rec. {m2_sym} C2 (%)", line=dict(color="#475569", width=2.5)))
+    fig_s.add_trace(go.Scatter(x=[res["p80_reb_calc"], res["p80_reb_calc"]], y=[50, 95], mode="lines", name=f"P80 ({res['p80_reb_calc']:.1f} µm)", line=dict(dash="dash", color="#0F766E", width=1.8)))
     fig_s.update_layout(
-        title="Sensibilidad: P80 de Molienda vs. Recuperación",
-        xaxis_title="P80 del Rebose del Clasificador Helicoidal (µm)",
-        yaxis_title="Recuperación Metalúrgica (%)",
+        title="Sensibilidad: P80 vs. Recuperación",
+        xaxis_title="P80 Rebose (µm)",
+        yaxis_title="Recuperación (%)",
         template="plotly_white",
         paper_bgcolor="#FFFFFF",
         plot_bgcolor="#FFFFFF",
-        font=dict(family="Inter, Arial, sans-serif", color="#0F172A"),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.30, xanchor="center", x=0.5),
-        margin=dict(t=45, b=85, l=50, r=20),
-        height=410
+        font=dict(family="Inter, Arial, sans-serif", color="#0F172A", size=11),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.34, xanchor="center", x=0.5),
+        margin=dict(t=42, b=90, l=45, r=15),
+        height=395
     )
     st.plotly_chart(fig_s, width="stretch")
+
+with col_g3:
+    prods_cortos = [f"Conc. C1 ({m1_sym})", f"Conc. C2 ({m2_sym})", "Relave Final"]
+    dist_m1_vals = [
+        round(float(res["rec_glob_c1"]), 2),
+        round(float((res["fino_m1_c2"] / max(res["fino_m1_alim"], 1e-9)) * 100.0), 2),
+        round(float((res["fino_m1_rel"] / max(res["fino_m1_alim"], 1e-9)) * 100.0), 2),
+    ]
+    dist_m2_vals = [
+        round(float((res["fino_m2_c1"] / max(res["fino_m2_alim"], 1e-9)) * 100.0), 2),
+        round(float(res["rec_glob_c2"]), 2),
+        round(float((res["fino_m2_rel"] / max(res["fino_m2_alim"], 1e-9)) * 100.0), 2),
+    ]
+
+    fig_d = go.Figure()
+    fig_d.add_trace(go.Bar(x=prods_cortos, y=dist_m1_vals, name=f"Dist. {m1_sym} (%)", marker_color="#1E3A8A", text=dist_m1_vals, textposition="outside"))
+    fig_d.add_trace(go.Bar(x=prods_cortos, y=dist_m2_vals, name=f"Dist. {m2_sym} (%)", marker_color="#0F766E", text=dist_m2_vals, textposition="outside"))
+    fig_d.update_layout(
+        title=f"Distribución Metálica ({m1_sym} y {m2_sym})",
+        xaxis_title="Producto",
+        yaxis=dict(title="Distribución (%)", range=[0, 105]),
+        barmode="group",
+        template="plotly_white",
+        paper_bgcolor="#FFFFFF",
+        plot_bgcolor="#FFFFFF",
+        font=dict(family="Inter, Arial, sans-serif", color="#0F172A", size=11),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.34, xanchor="center", x=0.5),
+        margin=dict(t=42, b=90, l=45, r=15),
+        height=395
+    )
+    st.plotly_chart(fig_d, width="stretch")
 
 # ==================== SECCIÓN 3: BALANCES, 34 CORRIENTES Y EXPORTACIÓN EXCEL ====================
 st.markdown("""
@@ -1654,10 +1725,10 @@ with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
         ("P80 Rebose Clasificador (µm)", res["p80_reb_calc"]),
         (f"Recuperación Global {m1_sym} C1 (%)", res["rec_glob_c1"]),
         (f"Ley {m1_sym} en Conc. C1 (%)", res["ley_c1_m1"]),
-        (f"Ratio Concentración K C1 (F/C1)", ratio_k_c1),
+        ("Ratio Concentración K C1 (F/C1)", ratio_k_c1),
         (f"Recuperación Global {m2_sym} C2 (%)", res["rec_glob_c2"]),
         (f"Ley {m2_sym} en Conc. C2 (%)", res["ley_c2_m2"]),
-        (f"Ratio Concentración K C2 (F/C2)", ratio_k_c2),
+        ("Ratio Concentración K C2 (F/C2)", ratio_k_c2),
         ("Consumo Específico de Agua (m³/t)", consumo_agua_m3_t),
         ("Relave Final [Corr. 34] (kg/h)", res["s34_relave"]),
     ]
@@ -1755,7 +1826,7 @@ ts_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 estado_masa = "Balance Convergente — Error < 0.01%" if res["error_masa_pct"] < 0.01 else f"Balance Convergente — Error {res['error_masa_pct']:.4f}%"
 st.markdown(f"""
 <div class="status-footer">
-  <span>Motor JICA Sim v3.7 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
+  <span>Motor JICA Sim v3.8 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
   <span>{estado_masa}</span>
   <span>Última actualización: {ts_actual}</span>
 </div>
