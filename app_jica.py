@@ -10,41 +10,101 @@ import plotly.graph_objects as go
 st.set_page_config(
     page_title="Gemelo Digital — Planta Piloto JICA (UNMSM)",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
-# ==================== SINCRONIZACIÓN SEGURA DE PARÁMETROS CLAVE ====================
-PARAM_DEFAULTS = {
-    "val_F": 325.0,
-    "val_sol_mol": 72.0,
-    "val_cc_esp": 210.0,
-    "val_sol_reb": 30.0,
+# ==================== ESTADO INICIAL CENTRALIZADO (SIN BARRA LATERAL) ====================
+DEFAULTS = {
+    "p_modo": "Modo Guiado (Estudiantes)",
+    "p_tema": "Plano CAD (Blanco Técnico)",
+    "p_esquema": "Pb - Zn (Galena en C1 / Esfalerita en C2)",
+    "p_F": 325.0,
+    "p_f80": 105.0,
+    "p_set_mand": 26.0,
+    "p_set_rod": 6.5,
+    "p_wi": 13.8,
+    "p_sol_mol": 72.0,
+    "p_cc_esp": 210.0,
+    "p_sol_reb": 30.0,
+    "p_sg": 2.95,
+    "p_ley_m1": 3.20,
+    "p_ley_m2": 5.50,
+    "p_ley_fe": 14.0,
+    "p_ph_c1": 8.5,
+    "p_dep_c1": 250.0,
+    "p_col_c1": 35.0,
+    "p_ph_c2": 10.8,
+    "p_act_c2": 350.0,
+    "p_col_c2": 45.0,
+    "p_rec_ro1": 82.0,
+    "p_rec_cl1": 88.0,
+    "p_rec_scv1": 55.0,
+    "p_rec_ro2": 80.0,
+    "p_rec_cl2": 86.0,
+    "p_rec_scv2": 50.0,
+    "base_updated_ts": "",
 }
 
-for k_def, v_def in PARAM_DEFAULTS.items():
+for k_def, v_def in DEFAULTS.items():
     if k_def not in st.session_state:
         st.session_state[k_def] = v_def
 
-WIDGET_GROUPS = {
-    "val_F": ("sb_F", "top_F", "pfd_F"),
-    "val_sol_mol": ("sb_sol_mol", "top_sol_mol", "pfd_sol_mol"),
-    "val_cc_esp": ("sb_cc_esp", "top_cc_esp", "pfd_cc_esp"),
-    "val_sol_reb": ("sb_sol_reb", "top_sol_reb"),
-}
 
-for master_k, widget_keys in WIDGET_GROUPS.items():
-    for wk in widget_keys:
-        if wk not in st.session_state:
-            st.session_state[wk] = st.session_state[master_k]
+def on_esquema_change():
+    esq = st.session_state["p_esquema"]
+    if esq.startswith("Pb - Zn"):
+        st.session_state["p_ley_m1"] = 3.20
+        st.session_state["p_ley_m2"] = 5.50
+        st.session_state["p_ley_fe"] = 14.0
+    elif esq.startswith("Cu - Zn"):
+        st.session_state["p_ley_m1"] = 1.85
+        st.session_state["p_ley_m2"] = 4.80
+        st.session_state["p_ley_fe"] = 16.5
+    else:
+        st.session_state["p_ley_m1"] = 1.60
+        st.session_state["p_ley_m2"] = 3.40
+        st.session_state["p_ley_fe"] = 13.0
 
 
-def sync_param(master_key, source_key):
-    nuevo_valor = st.session_state[source_key]
-    st.session_state[master_key] = nuevo_valor
-    for wk in WIDGET_GROUPS[master_key]:
-        if wk != source_key:
-            st.session_state[wk] = nuevo_valor
+# Lectura de parámetros activos desde session_state (actualizados antes de cada recálculo)
+modo_interfaz = st.session_state["p_modo"]
+es_modo_guiado = modo_interfaz.startswith("Modo Guiado")
+tema_plano = st.session_state["p_tema"]
+esquema_mineral = st.session_state["p_esquema"]
 
+if esquema_mineral.startswith("Pb - Zn"):
+    m1_sym, m2_sym = "Pb", "Zn"
+elif esquema_mineral.startswith("Cu - Zn"):
+    m1_sym, m2_sym = "Cu", "Zn"
+else:
+    m1_sym, m2_sym = "Cu", "Pb"
+
+F_kgh = st.session_state["p_F"]
+f80_alim_mm = st.session_state["p_f80"]
+set_mandibulas_mm = st.session_state["p_set_mand"]
+set_rodillos_mm = st.session_state["p_set_rod"]
+wi_bond = st.session_state["p_wi"]
+sol_molino = st.session_state["p_sol_mol"]
+cc_espiral_pct = st.session_state["p_cc_esp"]
+sol_rebose = st.session_state["p_sol_reb"]
+sg_mineral = st.session_state["p_sg"]
+
+ley_f_m1 = st.session_state["p_ley_m1"]
+ley_f_m2 = st.session_state["p_ley_m2"]
+ley_f_fe = st.session_state["p_ley_fe"]
+ph_c1 = st.session_state["p_ph_c1"]
+dosis_dep_c1 = st.session_state["p_dep_c1"]
+dosis_col_c1 = st.session_state["p_col_c1"]
+ph_c2 = st.session_state["p_ph_c2"]
+dosis_act_c2 = st.session_state["p_act_c2"]
+dosis_col_c2 = st.session_state["p_col_c2"]
+
+rec_ro1 = st.session_state["p_rec_ro1"]
+rec_cl1 = st.session_state["p_rec_cl1"]
+rec_scv1 = st.session_state["p_rec_scv1"]
+rec_ro2 = st.session_state["p_rec_ro2"]
+rec_cl2 = st.session_state["p_rec_cl2"]
+rec_scv2 = st.session_state["p_rec_scv2"]
 
 # ==================== ESTILOS INDUSTRIALES SOBRIOS (SCADA / SIMULACIÓN) ====================
 st.markdown("""
@@ -58,62 +118,19 @@ html, body, [class*="css"] {
 }
 
 .block-container {
-    padding-top: 1.8rem;
+    padding-top: 1.15rem;
     padding-bottom: 1.25rem;
-    max-width: 98%;
+    max-width: 99%;
 }
 
-/* Ocultar botón Deploy, menú superior derecho y footer SIN ocultar el control de reapertura de sidebar */
+/* Ocultar chrome genérico de Streamlit (ya no existe barra lateral) */
 [data-testid="stAppDeployButton"],
 #MainMenu,
-[data-testid="stMainMenu"] {
-    visibility: hidden;
-    display: none;
-}
-
+[data-testid="stMainMenu"],
+header[data-testid="stHeader"],
 footer {
     visibility: hidden;
     display: none;
-}
-
-/* ETAPA 1: Proteger siempre la barra lateral y el control nativo de reapertura en escritorio y móvil */
-header[data-testid="stHeader"] {
-    background-color: transparent !important;
-    height: 2.75rem;
-    pointer-events: none;
-}
-
-header[data-testid="stHeader"] button,
-[data-testid="collapsedControl"],
-[data-testid="stSidebarCollapsedControl"] {
-    visibility: visible !important;
-    display: flex !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    z-index: 999999 !important;
-}
-
-[data-testid="collapsedControl"] button,
-[data-testid="stSidebarCollapsedControl"] button {
-    background-color: #1E3A8A !important;
-    color: #FFFFFF !important;
-    border: 1px solid #172554 !important;
-    border-radius: 6px !important;
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22) !important;
-}
-
-/* Barra lateral sobria */
-[data-testid="stSidebar"] {
-    background-color: #FFFFFF;
-    border-right: 1px solid #E2E8F0;
-    visibility: visible !important;
-}
-
-[data-testid="stSidebar"] .stMarkdown h2,
-[data-testid="stSidebar"] .stMarkdown h3 {
-    color: #0F172A;
-    font-weight: 600;
-    letter-spacing: -0.01em;
 }
 
 /* Cabecera principal e insignia de estado SCADA */
@@ -127,7 +144,7 @@ header[data-testid="stHeader"] button,
     border: 1px solid #E2E8F0;
     border-left: 4px solid #1E3A8A;
     border-radius: 6px;
-    padding: 14px 18px;
+    padding: 13px 18px;
     margin-bottom: 10px;
 }
 
@@ -190,7 +207,7 @@ header[data-testid="stHeader"] button,
 }
 
 .guide-hint {
-    font-size: 0.73rem;
+    font-size: 0.72rem;
     color: #475569;
     background-color: #F8FAFC;
     border-left: 2px solid #94A3B8;
@@ -207,7 +224,7 @@ header[data-testid="stHeader"] button,
     border-radius: 4px;
     padding: 4px 7px;
     margin: -4px 0 8px 0;
-    font-size: 0.72rem;
+    font-size: 0.71rem;
     line-height: 1.3;
 }
 
@@ -224,7 +241,6 @@ header[data-testid="stHeader"] button,
     border: 1px solid #BBF7D0;
     color: #166534;
 }
-
 .sem-verde .sem-dot { background-color: #16A34A; }
 
 .sem-ambar {
@@ -232,7 +248,6 @@ header[data-testid="stHeader"] button,
     border: 1px solid #FDE68A;
     color: #92400E;
 }
-
 .sem-ambar .sem-dot { background-color: #D97706; }
 
 .sem-rojo {
@@ -240,7 +255,6 @@ header[data-testid="stHeader"] button,
     border: 1px solid #FECACA;
     color: #991B1B;
 }
-
 .sem-rojo .sem-dot { background-color: #DC2626; }
 
 .kpi-sem-pill {
@@ -346,7 +360,7 @@ header[data-testid="stHeader"] button,
     color: #7F1D1D;
 }
 
-/* Barra de herramientas del Flowsheet y Ficha integrada */
+/* Barra de herramientas del Flowsheet y Panel Integrado */
 .toolbar-panel {
     background-color: #F1F5F9;
     border: 1px solid #CBD5E1;
@@ -367,30 +381,41 @@ header[data-testid="stHeader"] button,
 }
 
 .ficha-card {
-    background-color: #FFFFFF;
+    background-color: #F8FAFC;
     border: 1px solid #CBD5E1;
     border-top: 3px solid #1E3A8A;
     border-radius: 6px;
-    padding: 10px 12px;
+    padding: 9px 11px;
     margin-bottom: 10px;
-    font-size: 0.80rem;
+    font-size: 0.79rem;
 }
 
 .ficha-title {
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.03em;
     color: #1E3A8A;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
 }
 
 .ficha-row {
     display: flex;
     justify-content: space-between;
-    padding: 3px 0;
-    border-bottom: 1px solid #F1F5F9;
-    font-size: 0.78rem;
+    padding: 2.5px 0;
+    border-bottom: 1px solid #E2E8F0;
+    font-size: 0.76rem;
+}
+
+.panel-heading {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #0F172A;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #1E3A8A;
 }
 
 .tour-card {
@@ -417,9 +442,9 @@ button[data-baseweb="tab"][aria-selected="true"] {
     border-bottom-color: #1E3A8A;
 }
 
-/* Expanders de sidebar */
+/* Expanders */
 div[data-testid="stExpander"] {
-    background-color: #F8FAFC;
+    background-color: #FFFFFF;
     border: 1px solid #E2E8F0;
     border-radius: 6px;
     margin-bottom: 8px;
@@ -441,7 +466,7 @@ div[data-testid="stExpander"] {
 """, unsafe_allow_html=True)
 
 
-# ==================== UTILIDAD SEMÁFORO OPERATIVO (ETAPA 3) ====================
+# ==================== UTILIDAD SEMÁFORO OPERATIVO ====================
 def evaluar_semaforo(param_id, valor):
     if param_id == "alimento":
         if 200.0 <= valor <= 450.0:
@@ -514,204 +539,6 @@ def render_semaforo(param_id, valor):
 def render_guide_hint(texto, activo):
     if activo:
         st.markdown(f'<div class="guide-hint">{texto}</div>', unsafe_allow_html=True)
-
-
-# ==================== PANEL LATERAL: ENTRADAS OPERATIVAS Y QUÍMICAS ====================
-st.sidebar.markdown("## Control de Proceso JICA")
-
-modo_interfaz = st.sidebar.radio(
-    "Modo de Interfaz",
-    ["Modo Guiado (Estudiantes)", "Modo Técnico (Compacto)"],
-    index=0,
-    horizontal=True,
-    help="Modo Guiado muestra explicaciones de qué hace cada variable y qué ocurre si sube o baja."
-)
-es_modo_guiado = modo_interfaz.startswith("Modo Guiado")
-
-tema_plano = st.sidebar.radio(
-    "Estilo del Diagrama",
-    ["Plano CAD (Blanco Técnico)", "SCADA (Oscuro)"],
-    index=0,
-    horizontal=True
-)
-
-esquema_mineral = st.sidebar.selectbox(
-    "Esquema de Flotación Diferencial",
-    [
-        "Pb - Zn (Galena en C1 / Esfalerita en C2)",
-        "Cu - Zn (Calcopirita en C1 / Esfalerita en C2)",
-        "Cu - Pb (Calcopirita en C1 / Galena en C2)"
-    ]
-)
-
-if esquema_mineral.startswith("Pb - Zn"):
-    m1_sym, m2_sym = "Pb", "Zn"
-    d_m1_f, d_m2_f, d_fe_f = 3.20, 5.50, 14.0
-elif esquema_mineral.startswith("Cu - Zn"):
-    m1_sym, m2_sym = "Cu", "Zn"
-    d_m1_f, d_m2_f, d_fe_f = 1.85, 4.80, 16.5
-else:
-    m1_sym, m2_sym = "Cu", "Pb"
-    d_m1_f, d_m2_f, d_fe_f = 1.60, 3.40, 13.0
-
-with st.sidebar.expander("1. Chancado y Molienda", expanded=True):
-    st.number_input(
-        "Cantidad de Mineral / Alimento Fresco (kg/h)",
-        min_value=100.0, max_value=800.0, step=25.0,
-        key="sb_F", on_change=sync_param, args=("val_F", "sb_F"),
-        help="Corriente 1 — Alimentación fresca a Chancadora de Mandíbulas [Equipo 1]"
-    )
-    render_semaforo("alimento", st.session_state["val_F"])
-    render_guide_hint(
-        "Sube o baja cuánto mineral entra por hora; si aumenta, suben los flujos en kg/h y cambia el caudal de pulpa.",
-        es_modo_guiado
-    )
-
-    f80_alim_mm = st.number_input(
-        "F80 Alimento Fresco (mm)",
-        min_value=25.0, max_value=127.0, value=105.0, step=5.0,
-        help="Tamaño característico F80 del mineral fresco [Corriente 1]"
-    )
-    render_guide_hint(
-        "Tamaño de la roca antes de chancar; a mayor F80, más reducción deben realizar las chancadoras.",
-        es_modo_guiado
-    )
-
-    set_mandibulas_mm = st.number_input(
-        "Set Chanc. Mandíbulas (mm)",
-        min_value=12.0, max_value=38.0, value=26.0, step=1.0,
-        help="CSS — Closed Side Setting de Chancadora de Mandíbulas [Equipo 1]"
-    )
-    set_rodillos_mm = st.number_input(
-        "Set Chanc. Rodillos (mm)",
-        min_value=3.0, max_value=15.0, value=6.5, step=0.5,
-        help="Abertura entre rodillos de chancadora secundaria [Equipo 2]"
-    )
-    render_guide_hint(
-        "Abertura de descarga de chancadoras; si la cierras (bajas mm), el mineral entra más fino al molino.",
-        es_modo_guiado
-    )
-
-    wi_bond = st.number_input(
-        "Work Index Bond Wi (kWh/t)",
-        min_value=8.0, max_value=25.0, value=13.8, step=0.2,
-        help="Índice de trabajo de Bond para cálculo energético en molienda [Equipo 5]"
-    )
-    render_guide_hint(
-        "Dureza del mineral; si sube, el molino requiere más energía (kW) y el P80 tiende a salir más grueso.",
-        es_modo_guiado
-    )
-
-    st.number_input(
-        "% Sólidos Molino 2'x2'",
-        min_value=55.0, max_value=84.0, step=1.0,
-        key="sb_sol_mol", on_change=sync_param, args=("val_sol_mol", "sb_sol_mol"),
-        help="Porcentaje de sólidos en peso en la alimentación al Molino de Bolas 2'x2' [Equipo 5 / Corriente 5]"
-    )
-    render_semaforo("sol_molino", st.session_state["val_sol_mol"])
-    render_guide_hint(
-        "Qué tan espesa es la pulpa en el molino; si sube sobre 78% hay riesgo de atoramiento, si baja de 62% pierde eficiencia.",
-        es_modo_guiado
-    )
-
-    st.number_input(
-        "Carga Circulante Espiral (%)",
-        min_value=80.0, max_value=320.0, step=10.0,
-        key="sb_cc_esp", on_change=sync_param, args=("val_cc_esp", "sb_cc_esp"),
-        help="Relación de arenas recirculadas [Corriente 9] respecto al alimento fresco en Clasificador Helicoidal [Equipo 6]"
-    )
-    render_semaforo("cc_espiral", st.session_state["val_cc_esp"])
-    render_guide_hint(
-        "Porcentaje de arenas gruesas que vuelven al molino; si sube, mejora la finura (baja P80) pero aumenta la carga al molino.",
-        es_modo_guiado
-    )
-
-    st.number_input(
-        "% Sólidos Rebose",
-        min_value=20.0, max_value=45.0, step=1.0,
-        key="sb_sol_reb", on_change=sync_param, args=("val_sol_reb", "sb_sol_reb"),
-        help="Porcentaje de sólidos en peso en el rebose del clasificador [Corrientes 10 / 12]"
-    )
-    render_guide_hint(
-        "Concentración de sólidos que va a flotación; si baja, entra más agua de dilución y sube el caudal en L/min.",
-        es_modo_guiado
-    )
-
-    sg_mineral = st.number_input(
-        "Gravedad Específica Mineral (SG)",
-        min_value=2.5, max_value=4.5, value=2.95, step=0.05,
-        help="Densidad relativa de sólidos (t/m³) para conversión de flujos másicos a volumétricos"
-    )
-
-with st.sidebar.expander(f"2. Leyes de Cabeza ({m1_sym}, {m2_sym}, Fe) y Reactivos", expanded=False):
-    ley_f_m1 = st.number_input(
-        f"Ley Cabeza {m1_sym} (%)", min_value=0.2, max_value=20.0, value=d_m1_f, step=0.1,
-        help=f"Ley inicial de {m1_sym} en el alimento fresco [Corriente 1]"
-    )
-    ley_f_m2 = st.number_input(
-        f"Ley Cabeza {m2_sym} (%)", min_value=0.5, max_value=25.0, value=d_m2_f, step=0.1,
-        help=f"Ley inicial de {m2_sym} en el alimento fresco [Corriente 1]"
-    )
-    ley_f_fe = st.number_input(
-        "Ley Cabeza Fe / Pirita (%)", min_value=1.0, max_value=45.0, value=d_fe_f, step=0.5,
-        help="Contenido de hierro / sulfuros de hierro en cabeza [Corriente 1]"
-    )
-    render_guide_hint(
-        "Leyes iniciales del mineral que entra a planta; si suben, aumenta la masa de concentrado recuperable.",
-        es_modo_guiado
-    )
-
-    ph_c1 = st.number_input(
-        "pH Acondicionamiento C1", min_value=6.5, max_value=11.5, value=8.5, step=0.1,
-        help="pH de pulpa en Acondicionadores 1 y 2 [Equipos 9 y 10]"
-    )
-    dosis_dep_c1 = st.number_input(
-        "Depresor ZnSO4 Acond. 1 (g/t)", min_value=0.0, max_value=800.0, value=250.0, step=25.0,
-        help="Dosificación de sulfato de zinc en Acondicionador 1 [Equipo 9]"
-    )
-    dosis_col_c1 = st.number_input(
-        "Colector Z-11 Acond. 2 (g/t)", min_value=5.0, max_value=150.0, value=35.0, step=5.0,
-        help="Dosificación de xantato colector en Acondicionador 2 [Equipo 10]"
-    )
-    render_guide_hint(
-        "En C1 el depresor ayuda a mantener limpio el concentrado (sube ley) y el colector impulsa la recuperación.",
-        es_modo_guiado
-    )
-
-    ph_c2 = st.number_input(
-        "pH Acondicionamiento C2", min_value=8.0, max_value=12.5, value=10.8, step=0.1,
-        help="pH alcalino en Acondicionadores 3 y 4 del Circuito 2 [Equipos 18 y 19]"
-    )
-    dosis_act_c2 = st.number_input(
-        "Activador CuSO4 Acond. 3 (g/t)", min_value=50.0, max_value=1000.0, value=350.0, step=25.0,
-        help="Dosificación de sulfato de cobre como activador en Acondicionador 3 [Equipo 18]"
-    )
-    dosis_col_c2 = st.number_input(
-        "Colector Z-6 Acond. 4 (g/t)", min_value=5.0, max_value=150.0, value=45.0, step=5.0,
-        help="Dosificación de colector en Acondicionador 4 [Equipo 19]"
-    )
-    render_guide_hint(
-        "En C2 el activador (CuSO4) y el pH alcalino reactivan el segundo mineral para flotarlo sin arrastrar pirita.",
-        es_modo_guiado
-    )
-
-with st.sidebar.expander("3. Selectividad de Bancos", expanded=False):
-    rec_ro1 = st.number_input("Rec. Rougher C1 (%)", min_value=55.0, max_value=95.0, value=82.0, step=1.0, help="Recuperación de etapa en Banco Rougher Circuito 1 [Equipo 11]")
-    rec_cl1 = st.number_input("Rec. Cleaner 1 (%)", min_value=60.0, max_value=98.0, value=88.0, step=1.0, help="Recuperación de etapa en Banco Cleaner 1 [Equipo 12]")
-    rec_scv1 = st.number_input("Rec. Scavenger C1 (%)", min_value=25.0, max_value=85.0, value=55.0, step=1.0, help="Recuperación de etapa en Banco Scavenger Circuito 1 [Equipo 13]")
-    rec_ro2 = st.number_input("Rec. Rougher C2 (%)", min_value=55.0, max_value=95.0, value=80.0, step=1.0, help="Recuperación de etapa en Banco Rougher Circuito 2 [Equipo 20]")
-    rec_cl2 = st.number_input("Rec. Cleaner 2 (%)", min_value=60.0, max_value=98.0, value=86.0, step=1.0, help="Recuperación de etapa en Banco Cleaner 2 [Equipo 21]")
-    rec_scv2 = st.number_input("Rec. Scavenger C2 (%)", min_value=25.0, max_value=85.0, value=50.0, step=1.0, help="Recuperación de etapa en Banco Scavenger Circuito 2 [Equipo 22]")
-    render_guide_hint(
-        "Controlan cuánto se recupera y recircula en cada banco de celdas (Rougher = desbaste, Cleaner = limpieza, Scavenger = barrido).",
-        es_modo_guiado
-    )
-
-# Lectura unificada de parámetros sincronizados
-F_kgh = st.session_state["val_F"]
-sol_molino = st.session_state["val_sol_mol"]
-cc_espiral_pct = st.session_state["val_cc_esp"]
-sol_rebose = st.session_state["val_sol_reb"]
 
 
 # ==================== MOTOR METALÚRGICO (RESULTADOS CALCULADOS — INTACTO) ====================
@@ -795,7 +622,6 @@ def simular_planta(
 
     pulpa_rebose_lmin = ((s10_rebose / sg_val) + w10_rebose) / 60.0
 
-    # Verificación de cierre de balance de masa en sólidos (kg/h)
     suma_salidas_solidos = s17_c1 + s29_c2 + s34_relave
     error_masa_pct = abs(F_val - suma_salidas_solidos) / max(F_val, 1e-9) * 100.0
 
@@ -831,20 +657,6 @@ res = simular_planta(
 # ==================== COMPARADOR CASO BASE VS. ACTUAL ====================
 if "caso_base" not in st.session_state:
     st.session_state["caso_base"] = res.copy()
-
-st.sidebar.markdown("---")
-if st.sidebar.button(
-    "Fijar Estado Actual como Caso Base",
-    width="stretch",
-    help="Guarda una foto de los resultados actuales como referencia para comparar cambios posteriores."
-):
-    st.session_state["caso_base"] = res.copy()
-    st.sidebar.caption("Caso base actualizado.")
-
-render_guide_hint(
-    "Guarda el escenario actual como punto de referencia para ver si tus cambios mejoran o empeoran los KPIs.",
-    es_modo_guiado
-)
 
 base = st.session_state["caso_base"]
 
@@ -885,7 +697,7 @@ elif tiene_warn:
 else:
     badge_html = '<span class="scada-badge badge-ok">SCADA: NORMAL</span>'
 
-# ==================== CABECERA CORPORATIVA + RESPALDO SIDEBAR (ETAPA 1) ====================
+# ==================== CABECERA CORPORATIVA ====================
 st.markdown(f"""
 <div class="header-bar">
   <div>
@@ -896,69 +708,14 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-col_rec1, col_rec2 = st.columns([1.15, 3.85])
-with col_rec1:
-    if st.button(
-        "Mostrar / Reabrir Panel de Datos",
-        width="stretch",
-        help="Reabre la barra lateral izquierda si fue ocultada en escritorio o celular."
-    ):
-        components.html("""
-        <script>
-        (function() {
-            const doc = window.parent.document;
-            const selectors = [
-                '[data-testid="collapsedControl"] button',
-                '[data-testid="stSidebarCollapsedControl"] button',
-                'button[data-testid="stBaseButton-headerNoPadding"]',
-                'button[aria-label*="Expand"]',
-                'button[aria-label*="Open sidebar"]'
-            ];
-            for (const sel of selectors) {
-                const btn = doc.querySelector(sel);
-                if (btn) { btn.click(); break; }
-            }
-        })();
-        </script>
-        """, height=0)
-
-with col_rec2:
-    with st.expander("Ajustes Rápidos (Respaldo directo si ocultaste la barra lateral)", expanded=False):
-        r1, r2, r3, r4 = st.columns(4)
-        with r1:
-            st.number_input(
-                "Alimento Fresco (kg/h)", min_value=100.0, max_value=800.0, step=25.0,
-                key="top_F", on_change=sync_param, args=("val_F", "top_F")
-            )
-            render_semaforo("alimento", st.session_state["val_F"])
-        with r2:
-            st.number_input(
-                "% Sólidos Molino 2'x2'", min_value=55.0, max_value=84.0, step=1.0,
-                key="top_sol_mol", on_change=sync_param, args=("val_sol_mol", "top_sol_mol")
-            )
-            render_semaforo("sol_molino", st.session_state["val_sol_mol"])
-        with r3:
-            st.number_input(
-                "Carga Circulante (%)", min_value=80.0, max_value=320.0, step=10.0,
-                key="top_cc_esp", on_change=sync_param, args=("val_cc_esp", "top_cc_esp")
-            )
-            render_semaforo("cc_espiral", st.session_state["val_cc_esp"])
-        with r4:
-            st.number_input(
-                "% Sólidos Rebose", min_value=20.0, max_value=45.0, step=1.0,
-                key="top_sol_reb", on_change=sync_param, args=("val_sol_reb", "top_sol_reb")
-            )
-            st.caption("Sincronizado con el panel lateral.")
-
-# ETAPA 2: Nota contextual de escala piloto (UNMSM)
 if es_modo_guiado:
     st.markdown("""
     <div class="pilot-note">
-      <strong>Contexto Didáctico — Escala Piloto JICA (UNMSM):</strong> Esta planta opera a escala piloto (cientos de <strong>kg/h</strong>), mucho más pequeña que una concentradora de gran minería (que procesa decenas de miles de toneladas por día), pero reproduce exactamente el mismo circuito real de chancado, molienda en circuito cerrado y flotación diferencial para que puedas probar variables sin riesgo.
+      <strong>Contexto Didáctico — Escala Piloto JICA (UNMSM):</strong> Esta planta opera a escala piloto (cientos de <strong>kg/h</strong>), mucho más pequeña que una concentradora de gran minería (decenas de miles de toneladas por día), pero reproduce el mismo circuito real de chancado, molienda en circuito cerrado y flotación diferencial. Todos los controles de proceso están integrados al costado del Flowsheet para que nunca se pierda la barra lateral.
     </div>
     """, unsafe_allow_html=True)
 
-# ==================== TARJETAS KPI SUPERIORES CON SEMÁFORO (ETAPA 3) ====================
+# ==================== TARJETAS KPI SUPERIORES CON SEMÁFORO ====================
 kpi_specs = [
     ("P80 Rebose [Corr. 10]", f"{res['p80_reb_calc']:.1f} µm", delta_str(res["p80_reb_calc"], base["p80_reb_calc"], " µm"), evaluar_semaforo("p80_rebose", res["p80_reb_calc"])),
     (f"Conc. C1 ({m1_sym}) [Corr. 17]", f"{res['s17_c1']:.2f} kg/h", f"Ley {res['ley_c1_m1']:.1f}% | {delta_str(res['rec_glob_c1'], base['rec_glob_c1'], '% Rec')}", evaluar_semaforo("rec_c1", res["rec_glob_c1"])),
@@ -1051,7 +808,7 @@ tab_pfd, tab_et1, tab_sens, tab_34 = st.tabs([
     "Balance de 34 Corrientes y Exportación"
 ])
 
-# -------------------- PESTAÑA 1: FLOWSHEET + TOUR POR ETAPAS + FICHA RÁPIDA (ETAPA 4) --------------------
+# -------------------- PESTAÑA 1: FLOWSHEET + PANEL COMPLETO DE CONTROL INTEGRADO --------------------
 with tab_pfd:
     with st.expander("Tour / Guía por Etapas para Estudiantes (Qué probar paso a paso)", expanded=es_modo_guiado):
         etapa_tour = st.radio(
@@ -1068,21 +825,21 @@ with tab_pfd:
             st.markdown(f"""
             <div class="tour-card">
               <strong>Objetivo de la Etapa 1 (Equipos 1 al 8):</strong> Entender cómo se reduce el tamaño de la roca hasta liberar los sulfuros.<br>
-              <strong>Qué probar ahora:</strong> Modifica el <strong>% Sólidos Molino 2'x2'</strong> o la <strong>Carga Circulante Espiral (%)</strong> en la ficha derecha del plano. Observa cómo cambia el <strong>P80 de Rebose [Corr. 10]</strong> (actual: <strong>{res['p80_reb_calc']:.1f} µm</strong>), el retorno de arenas [Corr. 9] y el semáforo operativo.
+              <strong>Qué probar ahora:</strong> En el panel <em>Control de Proceso JICA</em> a la derecha del plano, abre <strong>1. Chancado y Molienda</strong> y modifica el <strong>% Sólidos Molino 2'x2'</strong> o la <strong>Carga Circulante Espiral (%)</strong>. Observa cómo cambia el <strong>P80 de Rebose [Corr. 10]</strong> (actual: <strong>{res['p80_reb_calc']:.1f} µm</strong>), el retorno de arenas [Corr. 9] y el semáforo operativo.
             </div>
             """, unsafe_allow_html=True)
         elif etapa_tour.startswith("Etapa 2"):
             st.markdown(f"""
             <div class="tour-card">
               <strong>Objetivo de la Etapa 2 (Equipos 9 al 24):</strong> Ver cómo la química separa {m1_sym} en C1 y {m2_sym} en C2 enviando la ganga al Relave [Corr. 34].<br>
-              <strong>Qué probar ahora:</strong> Usa el selector <strong>Trazabilidad de ruta</strong> para resaltar C1 [Corr. 17] o C2 [Corr. 29], luego abre <em>2. Leyes de Cabeza y Reactivos</em> en el panel izquierdo y varía el depresor ZnSO4, el activador CuSO4 o el pH para ver su efecto en leyes y recuperaciones.
+              <strong>Qué probar ahora:</strong> Usa <strong>Trazabilidad de ruta</strong> para resaltar C1 [Corr. 17] o C2 [Corr. 29], luego abre <strong>2. Leyes de Cabeza y Reactivos</strong> en el panel derecho del plano y varía el depresor ZnSO4, el activador CuSO4 o el pH para ver su efecto en leyes y recuperaciones.
             </div>
             """, unsafe_allow_html=True)
         else:
             st.markdown("""
             <div class="tour-card">
               <strong>Objetivo de la Etapa 3 (Análisis de Escenarios):</strong> Evaluar mejoras de operación igual que un ingeniero metalurgista de planta.<br>
-              <strong>Qué probar ahora:</strong> Presiona <strong>Fijar Caso Base</strong> en la ficha derecha o en la barra lateral, luego sube el <strong>Alimento Fresco (kg/h)</strong> y compara los deltas en las 5 tarjetas KPI superiores, la pestaña <em>Sensibilidad y Comparativa</em> y el reporte Excel de 34 corrientes.
+              <strong>Qué probar ahora:</strong> Presiona <strong>Fijar Estado Actual como Caso Base</strong> en el panel derecho del plano, luego sube el <strong>Alimento Fresco (kg/h)</strong> y compara los deltas en las 5 tarjetas KPI superiores, la pestaña <em>Sensibilidad y Comparativa</em> y el reporte Excel de 34 corrientes.
             </div>
             """, unsafe_allow_html=True)
 
@@ -1505,7 +1262,7 @@ with tab_pfd:
         #jica-viewport {{
           position: relative;
           width: 100%;
-          height: 620px;
+          height: 640px;
           overflow: auto;
           background: {bg_svg};
           border: 1px solid #94A3B8;
@@ -1605,9 +1362,9 @@ with tab_pfd:
     </html>
     """
 
-    col_plano, col_ficha = st.columns([3.25, 1.25])
+    col_plano, col_panel = st.columns([2.95, 1.35])
     with col_plano:
-        components.html(sheet_html, height=690, scrolling=False)
+        components.html(sheet_html, height=710, scrolling=False)
         st.download_button(
             label="Descargar Plano Flowsheet (.SVG)",
             data=svg_only.encode("utf-8"),
@@ -1615,49 +1372,231 @@ with tab_pfd:
             mime="image/svg+xml"
         )
 
-    with col_ficha:
-        st.markdown(f"""
-        <div class="ficha-card">
-          <div class="ficha-title">Ficha de Corriente [{int(fila_corr['N° Corriente'])}]</div>
-          <div style="font-size:0.77rem; color:#334155; margin-bottom:6px;">{fila_corr['Descripción en Plano JICA']}</div>
-          <div class="ficha-row"><span>Sólidos</span><strong>{fila_corr['Sólidos (kg/h)']:.2f} kg/h</strong></div>
-          <div class="ficha-row"><span>% Sólidos</span><strong>{fila_corr['% Sólidos']:.1f} %</strong></div>
-          <div class="ficha-row"><span>Agua</span><strong>{fila_corr['Agua (L/h)']:.1f} L/h</strong></div>
-          <div class="ficha-row"><span>Pulpa Total</span><strong>{fila_corr['Pulpa Total (L/h)']:.1f} L/h</strong></div>
-          <div class="ficha-row"><span>P80 Estimado</span><strong>{fila_corr['P80 Estimado (µm)']:.0f} µm</strong></div>
-          <div class="ficha-row"><span>Ley {m1_sym} / {m2_sym}</span><strong>{fila_corr[f'Ley {m1_sym} (%)']:.2f}% / {fila_corr[f'Ley {m2_sym} (%)']:.2f}%</strong></div>
-        </div>
-        """, unsafe_allow_html=True)
+    # PANEL COMPLETO DE CONTROL INTEGRADO EN EL FLOWSHEET (REEMPLAZA A LA BARRA IZQUIERDA)
+    with col_panel:
+        with st.container(height=710, border=True):
+            st.markdown('<div class="panel-heading">Control de Proceso JICA</div>', unsafe_allow_html=True)
 
-        st.markdown('<div class="ficha-card"><div class="ficha-title">Ajustes Rápidos en Plano</div>', unsafe_allow_html=True)
-        st.number_input(
-            "Alimento Fresco (kg/h)",
-            min_value=100.0, max_value=800.0, step=25.0,
-            key="pfd_F", on_change=sync_param, args=("val_F", "pfd_F"),
-            help="Modifica la entrada de mineral fresco directamente junto al plano."
-        )
-        render_semaforo("alimento", st.session_state["val_F"])
+            st.markdown(f"""
+            <div class="ficha-card">
+              <div class="ficha-title">Ficha de Corriente [{int(fila_corr['N° Corriente'])}]</div>
+              <div style="font-size:0.74rem; color:#334155; margin-bottom:5px;">{fila_corr['Descripción en Plano JICA']}</div>
+              <div class="ficha-row"><span>Sólidos</span><strong>{fila_corr['Sólidos (kg/h)']:.2f} kg/h</strong></div>
+              <div class="ficha-row"><span>% Sólidos</span><strong>{fila_corr['% Sólidos']:.1f} %</strong></div>
+              <div class="ficha-row"><span>Agua / Pulpa</span><strong>{fila_corr['Agua (L/h)']:.1f} / {fila_corr['Pulpa Total (L/h)']:.1f} L/h</strong></div>
+              <div class="ficha-row"><span>P80 Estimado</span><strong>{fila_corr['P80 Estimado (µm)']:.0f} µm</strong></div>
+              <div class="ficha-row"><span>Ley {m1_sym} / {m2_sym}</span><strong>{fila_corr[f'Ley {m1_sym} (%)']:.2f}% / {fila_corr[f'Ley {m2_sym} (%)']:.2f}%</strong></div>
+            </div>
+            """, unsafe_allow_html=True)
 
-        st.number_input(
-            "% Sólidos Molino 2'x2'",
-            min_value=55.0, max_value=84.0, step=1.0,
-            key="pfd_sol_mol", on_change=sync_param, args=("val_sol_mol", "pfd_sol_mol"),
-            help="Ajusta la densidad de pulpa en el Molino de Bolas [Equipo 5]."
-        )
-        render_semaforo("sol_molino", st.session_state["val_sol_mol"])
+            with st.expander("Configuración y Esquema", expanded=False):
+                st.radio(
+                    "Modo de Interfaz",
+                    ["Modo Guiado (Estudiantes)", "Modo Técnico (Compacto)"],
+                    key="p_modo",
+                    horizontal=True,
+                    help="Modo Guiado muestra explicaciones de qué hace cada variable y qué ocurre si sube o baja."
+                )
+                st.radio(
+                    "Estilo del Diagrama",
+                    ["Plano CAD (Blanco Técnico)", "SCADA (Oscuro)"],
+                    key="p_tema",
+                    horizontal=True
+                )
+                st.selectbox(
+                    "Esquema de Flotación Diferencial",
+                    [
+                        "Pb - Zn (Galena en C1 / Esfalerita en C2)",
+                        "Cu - Zn (Calcopirita en C1 / Esfalerita en C2)",
+                        "Cu - Pb (Calcopirita en C1 / Galena en C2)"
+                    ],
+                    key="p_esquema",
+                    on_change=on_esquema_change
+                )
 
-        st.number_input(
-            "Carga Circulante (%)",
-            min_value=80.0, max_value=320.0, step=10.0,
-            key="pfd_cc_esp", on_change=sync_param, args=("val_cc_esp", "pfd_cc_esp"),
-            help="Ajusta el retorno de arenas del Clasificador Helicoidal [Equipo 6]."
-        )
-        render_semaforo("cc_espiral", st.session_state["val_cc_esp"])
+            with st.expander("1. Chancado y Molienda", expanded=True):
+                st.number_input(
+                    "Cantidad de Mineral / Alimento Fresco (kg/h)",
+                    min_value=100.0, max_value=800.0, step=25.0,
+                    key="p_F",
+                    help="Corriente 1 — Alimentación fresca a Chancadora de Mandíbulas [Equipo 1]"
+                )
+                render_semaforo("alimento", st.session_state["p_F"])
+                render_guide_hint(
+                    "Sube o baja cuánto mineral entra por hora; si aumenta, suben los flujos en kg/h y cambia el caudal de pulpa.",
+                    es_modo_guiado
+                )
 
-        if st.button("Fijar Caso Base desde Plano", width="stretch"):
-            st.session_state["caso_base"] = res.copy()
-            st.caption("Caso base actualizado.")
-        st.markdown('</div>', unsafe_allow_html=True)
+                st.number_input(
+                    "% Sólidos Molino 2'x2'",
+                    min_value=55.0, max_value=84.0, step=1.0,
+                    key="p_sol_mol",
+                    help="Porcentaje de sólidos en peso en la alimentación al Molino de Bolas 2'x2' [Equipo 5 / Corriente 5]"
+                )
+                render_semaforo("sol_molino", st.session_state["p_sol_mol"])
+                render_guide_hint(
+                    "Qué tan espesa es la pulpa en el molino; sobre 78% hay riesgo de atoramiento, bajo 62% pierde eficiencia.",
+                    es_modo_guiado
+                )
+
+                st.number_input(
+                    "Carga Circulante Espiral (%)",
+                    min_value=80.0, max_value=320.0, step=10.0,
+                    key="p_cc_esp",
+                    help="Relación de arenas recirculadas [Corriente 9] respecto al alimento fresco en Clasificador Helicoidal [Equipo 6]"
+                )
+                render_semaforo("cc_espiral", st.session_state["p_cc_esp"])
+                render_guide_hint(
+                    "Porcentaje de arenas gruesas que vuelven al molino; si sube, baja el P80 pero aumenta la carga al molino.",
+                    es_modo_guiado
+                )
+
+                st.number_input(
+                    "F80 Alimento Fresco (mm)",
+                    min_value=25.0, max_value=127.0, step=5.0,
+                    key="p_f80",
+                    help="Tamaño característico F80 del mineral fresco [Corriente 1]"
+                )
+                st.number_input(
+                    "Set Chanc. Mandíbulas (mm)",
+                    min_value=12.0, max_value=38.0, step=1.0,
+                    key="p_set_mand",
+                    help="CSS — Closed Side Setting de Chancadora de Mandíbulas [Equipo 1]"
+                )
+                st.number_input(
+                    "Set Chanc. Rodillos (mm)",
+                    min_value=3.0, max_value=15.0, step=0.5,
+                    key="p_set_rod",
+                    help="Abertura entre rodillos de chancadora secundaria [Equipo 2]"
+                )
+                render_guide_hint(
+                    "Si cierras el set (bajas mm), el mineral entra más fino al molino.",
+                    es_modo_guiado
+                )
+
+                st.number_input(
+                    "Work Index Bond Wi (kWh/t)",
+                    min_value=8.0, max_value=25.0, step=0.2,
+                    key="p_wi",
+                    help="Índice de trabajo de Bond para cálculo energético en molienda [Equipo 5]"
+                )
+                render_guide_hint(
+                    "Dureza del mineral; si sube, aumenta la potencia requerida (kW) y el P80 tiende a salir más grueso.",
+                    es_modo_guiado
+                )
+
+                st.number_input(
+                    "% Sólidos Rebose",
+                    min_value=20.0, max_value=45.0, step=1.0,
+                    key="p_sol_reb",
+                    help="Porcentaje de sólidos en peso en el rebose del clasificador [Corrientes 10 / 12]"
+                )
+                st.number_input(
+                    "Gravedad Específica Mineral (SG)",
+                    min_value=2.5, max_value=4.5, step=0.05,
+                    key="p_sg",
+                    help="Densidad relativa de sólidos (t/m³) para conversión de flujos másicos a volumétricos"
+                )
+
+            with st.expander(f"2. Leyes de Cabeza ({m1_sym}, {m2_sym}, Fe) y Reactivos", expanded=False):
+                st.number_input(
+                    f"Ley Cabeza {m1_sym} (%)",
+                    min_value=0.2, max_value=20.0, step=0.1,
+                    key="p_ley_m1",
+                    help=f"Ley inicial de {m1_sym} en el alimento fresco [Corriente 1]"
+                )
+                st.number_input(
+                    f"Ley Cabeza {m2_sym} (%)",
+                    min_value=0.5, max_value=25.0, step=0.1,
+                    key="p_ley_m2",
+                    help=f"Ley inicial de {m2_sym} en el alimento fresco [Corriente 1]"
+                )
+                st.number_input(
+                    "Ley Cabeza Fe / Pirita (%)",
+                    min_value=1.0, max_value=45.0, step=0.5,
+                    key="p_ley_fe",
+                    help="Contenido de hierro / sulfuros de hierro en cabeza [Corriente 1]"
+                )
+                render_guide_hint(
+                    "Leyes iniciales del mineral; si suben, aumenta la masa de concentrado recuperable.",
+                    es_modo_guiado
+                )
+
+                st.number_input(
+                    "pH Acondicionamiento C1",
+                    min_value=6.5, max_value=11.5, step=0.1,
+                    key="p_ph_c1",
+                    help="pH de pulpa en Acondicionadores 1 y 2 [Equipos 9 y 10]"
+                )
+                st.number_input(
+                    "Depresor ZnSO4 Acond. 1 (g/t)",
+                    min_value=0.0, max_value=800.0, step=25.0,
+                    key="p_dep_c1",
+                    help="Dosificación de sulfato de zinc en Acondicionador 1 [Equipo 9]"
+                )
+                st.number_input(
+                    "Colector Z-11 Acond. 2 (g/t)",
+                    min_value=5.0, max_value=150.0, step=5.0,
+                    key="p_col_c1",
+                    help="Dosificación de xantato colector en Acondicionador 2 [Equipo 10]"
+                )
+                render_guide_hint(
+                    "En C1 el depresor limpia el concentrado (sube ley) y el colector impulsa la recuperación.",
+                    es_modo_guiado
+                )
+
+                st.number_input(
+                    "pH Acondicionamiento C2",
+                    min_value=8.0, max_value=12.5, step=0.1,
+                    key="p_ph_c2",
+                    help="pH alcalino en Acondicionadores 3 y 4 del Circuito 2 [Equipos 18 y 19]"
+                )
+                st.number_input(
+                    "Activador CuSO4 Acond. 3 (g/t)",
+                    min_value=50.0, max_value=1000.0, step=25.0,
+                    key="p_act_c2",
+                    help="Dosificación de sulfato de cobre como activador en Acondicionador 3 [Equipo 18]"
+                )
+                st.number_input(
+                    "Colector Z-6 Acond. 4 (g/t)",
+                    min_value=5.0, max_value=150.0, step=5.0,
+                    key="p_col_c2",
+                    help="Dosificación de colector en Acondicionador 4 [Equipo 19]"
+                )
+                render_guide_hint(
+                    "En C2 el activador (CuSO4) y el pH alcalino reactivan el segundo mineral sin arrastrar pirita.",
+                    es_modo_guiado
+                )
+
+            with st.expander("3. Selectividad de Bancos", expanded=False):
+                st.number_input("Rec. Rougher C1 (%)", min_value=55.0, max_value=95.0, step=1.0, key="p_rec_ro1", help="Recuperación de etapa en Banco Rougher Circuito 1 [Equipo 11]")
+                st.number_input("Rec. Cleaner 1 (%)", min_value=60.0, max_value=98.0, step=1.0, key="p_rec_cl1", help="Recuperación de etapa en Banco Cleaner 1 [Equipo 12]")
+                st.number_input("Rec. Scavenger C1 (%)", min_value=25.0, max_value=85.0, step=1.0, key="p_rec_scv1", help="Recuperación de etapa en Banco Scavenger Circuito 1 [Equipo 13]")
+                st.number_input("Rec. Rougher C2 (%)", min_value=55.0, max_value=95.0, step=1.0, key="p_rec_ro2", help="Recuperación de etapa en Banco Rougher Circuito 2 [Equipo 20]")
+                st.number_input("Rec. Cleaner 2 (%)", min_value=60.0, max_value=98.0, step=1.0, key="p_rec_cl2", help="Recuperación de etapa en Banco Cleaner 2 [Equipo 21]")
+                st.number_input("Rec. Scavenger C2 (%)", min_value=25.0, max_value=85.0, step=1.0, key="p_rec_scv2", help="Recuperación de etapa en Banco Scavenger Circuito 2 [Equipo 22]")
+                render_guide_hint(
+                    "Rougher = desbaste, Cleaner = limpieza, Scavenger = barrido de colas.",
+                    es_modo_guiado
+                )
+
+            st.markdown("---")
+            if st.button(
+                "Fijar Estado Actual como Caso Base",
+                width="stretch",
+                help="Guarda una foto de los resultados actuales como referencia para comparar cambios en los KPIs."
+            ):
+                st.session_state["caso_base"] = res.copy()
+                st.session_state["base_updated_ts"] = datetime.now().strftime("%H:%M:%S")
+                st.rerun()
+
+            if st.session_state["base_updated_ts"]:
+                st.caption(f"Caso base fijado a las {st.session_state['base_updated_ts']}.")
+
+            render_guide_hint(
+                "Fija este escenario como referencia para ver los cambios (+ / -) en los 5 KPIs superiores.",
+                es_modo_guiado
+            )
 
 # -------------------- PESTAÑA 2: ETAPA 1 CALCULADA --------------------
 with tab_et1:
@@ -1752,7 +1691,6 @@ with tab_34:
     with pd.ExcelWriter(buffer_excel, engine="xlsxwriter") as writer:
         workbook = writer.book
 
-        # Estilos corporativos sobrios
         fmt_title = workbook.add_format({
             "bold": True, "font_size": 13, "font_color": "#0F172A"
         })
@@ -1809,7 +1747,6 @@ with tab_34:
                 val = df_3prod_r.iloc[r_idx - 1, c_idx]
                 ws_bal.write(r_idx, c_idx, val, fmt_text if c_idx == 0 else fmt_num)
 
-        # Gráfico nativo de Distribución de m1_sym (%) en Balance_Global_C1_C2
         chart_dist1 = workbook.add_chart({"type": "column"})
         chart_dist1.add_series({
             "name": f"Distribución {m1_sym} (%)",
@@ -1824,7 +1761,6 @@ with tab_34:
         chart_dist1.set_legend({"none": True})
         ws_bal.insert_chart("A7", chart_dist1, {"x_scale": 1.3, "y_scale": 1.15})
 
-        # Gráfico nativo de Distribución de m2_sym (%) en Balance_Global_C1_C2
         chart_dist2 = workbook.add_chart({"type": "column"})
         chart_dist2.add_series({
             "name": f"Distribución {m2_sym} (%)",
@@ -1886,7 +1822,7 @@ ts_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 estado_masa = "Balance Convergente — Error < 0.01%" if res["error_masa_pct"] < 0.01 else f"Balance Convergente — Error {res['error_masa_pct']:.4f}%"
 st.markdown(f"""
 <div class="status-footer">
-  <span>Motor JICA Sim v3.3 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
+  <span>Motor JICA Sim v3.4 | 24 Equipos / 34 Corrientes | Planta Piloto UNMSM</span>
   <span>{estado_masa}</span>
   <span>Última actualización: {ts_actual}</span>
 </div>
